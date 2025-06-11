@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaGuardian Demo Storyboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 50%, #f0f9ff 100%);
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #10b981, #14b8a6);
+            border-radius: 16px;
+            margin-bottom: 1rem;
+        }
+
+        .logo svg {
+            width: 32px;
+            height: 32px;
+            color: white;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #059669, #0d9488);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            color: #64748b;
+            margin-bottom: 2rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #059669, #0d9488);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #475569;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            border-color: #10b981;
+            color: #059669;
+        }
+
+        .timeline {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 3rem;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #14b8a6);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .scene {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            margin-bottom: 2rem;
+        }
+
+        .scene.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .scene-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .scene-image {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        .scene-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .scene-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(16, 185, 129, 0.1), rgba(20, 184, 166, 0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .scene-image:hover .scene-overlay {
+            opacity: 1;
+        }
+
+        .scene-text {
+            padding: 1rem;
+        }
+
+        .scene-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+
+        .scene-description {
+            font-size: 1rem;
+            color: #64748b;
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+
+        .scene-timing {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        .timing-badge {
+            background: #f1f5f9;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .voice-controls {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .voice-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+        }
+
+        .status-indicator.loading {
+            background: #f59e0b;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-indicator.ready {
+            background: #10b981;
+        }
+
+        .status-indicator.error {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .export-section {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .export-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .export-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 2px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .export-card:hover {
+            border-color: #10b981;
+            transform: translateY(-2px);
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .scene-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/>
+                    <path d="M21 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7"/>
+                    <path d="M7 7v10"/>
+                    <path d="M17 7v10"/>
+                </svg>
+            </div>
+            <h1>AquaGuardian Demo</h1>
+            <p class="subtitle">Interactive Storyboard - 3 Minute Product Showcase</p>
+            
+            <div class="controls">
+                <button class="btn btn-primary" onclick="playStoryboard()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    Play Storyboard
+                </button>
+                <button class="btn btn-secondary" onclick="pauseStoryboard()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+                    </svg>
+                    Pause
+                </button>
+                <button class="btn btn-secondary" onclick="resetStoryboard()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                    Reset
+                </button>
+                <button class="btn btn-secondary" onclick="preloadVoiceovers()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                    Load Voice-over
+                </button>
+            </div>
+        </header>
+
+        <div class="timeline">
+            <div class="timeline-header">
+                <h2>Storyboard Timeline</h2>
+                <span id="currentTime">00:00 / 03:00</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="voice-controls">
+                <div class="voice-status">
+                    <div class="status-indicator" id="voiceStatus"></div>
+                    <span id="voiceStatusText">Voice-over: Not loaded</span>
+                </div>
+                <div id="voiceProgress" style="display: none;">
+                    <small>Loading voice-over segments...</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene 1: Welcome & Logo (0-15s) -->
+        <div class="scene active" data-duration="15" data-voice="Welcome to AquaGuardian, the revolutionary platform for designing and simulating aquaponic systems. Transform your vision of sustainable agriculture into reality.">
+            <div class="scene-content">
+                <div class="scene-image">
+                    <img src="/demo-assets/hero-splash.png" alt="AquaGuardian Hero" />
+                    <div class="scene-overlay">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white" opacity="0.8">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="scene-text">
+                    <h3 class="scene-title">Welcome to AquaGuardian</h3>
+                    <p class="scene-description">
+                        Discover the future of sustainable agriculture with our comprehensive aquaponic system design platform. 
+                        From concept to cultivation, we guide you through every step of creating your perfect aquaponic ecosystem.
+                    </p>
+                    <div class="scene-timing">
+                        <span class="timing-badge">0:00 - 0:15</span>
+                        <span>Introduction & Brand Overview</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene 2: Design Wizard (15-45s) -->
+        <div class="scene" data-duration="30" data-voice="Our intuitive design wizard walks you through five simple steps. Choose your farm size, select fish species, pick your crops, set your budget, and configure your energy source. It's that easy.">
+            <div class="scene-content">
+                <div class="scene-image">
+                    <img src="/demo-assets/wizard-flow.png" alt="Design Wizard Interface" />
+                    <div class="scene-overlay">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white" opacity="0.8">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="scene-text">
+                    <h3 class="scene-title">Intelligent Design Wizard</h3>
+                    <p class="scene-description">
+                        Our step-by-step wizard makes aquaponic design accessible to everyone. Configure your system size, 
+                        choose from various fish species and crops, set your budget parameters, and select sustainable energy options. 
+                        Advanced algorithms ensure optimal compatibility and performance.
+                    </p>
+                    <div class="scene-timing">
+                        <span class="timing-badge">0:15 - 0:45</span>
+                        <span>Design Configuration Process</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene 3: Real-time Simulation (45-75s) -->
+        <div class="scene" data-duration="30" data-voice="Watch your system come to life with real-time performance simulation. See projected yields, water usage, energy consumption, and system efficiency. Our advanced algorithms predict your success.">
+            <div class="scene-content">
+                <div class="scene-image">
+                    <img src="/demo-assets/simulation-dashboard.png" alt="Simulation Results" />
+                    <div class="scene-overlay">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white" opacity="0.8">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="scene-text">
+                    <h3 class="scene-title">Advanced Performance Simulation</h3>
+                    <p class="scene-description">
+                        Experience the power of predictive modeling. Our simulation engine calculates fish yields, vegetable production, 
+                        water consumption, energy usage, and overall system efficiency. Make informed decisions with data-driven insights 
+                        before you build.
+                    </p>
+                    <div class="scene-timing">
+                        <span class="timing-badge">0:45 - 1:15</span>
+                        <span>Performance Analytics & Predictions</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene 4: Analytics Dashboard (75-105s) -->
+        <div class="scene" data-duration="30" data-voice="Dive deep into comprehensive analytics with beautiful charts and metrics. Track 30-day performance projections, monitor resource efficiency, and optimize your system for maximum productivity.">
+            <div class="scene-content">
+                <div class="scene-image">
+                    <img src="/demo-assets/analytics-charts.png" alt="Analytics Dashboard" />
+                    <div class="scene-overlay">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white" opacity="0.8">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="scene-text">
+                    <h3 class="scene-title">Comprehensive Analytics</h3>
+                    <p class="scene-description">
+                        Visualize your system's performance with interactive charts and detailed metrics. Track cumulative yields, 
+                        monitor resource consumption patterns, and identify optimization opportunities. Beautiful data visualization 
+                        makes complex information accessible and actionable.
+                    </p>
+                    <div class="scene-timing">
+                        <span class="timing-badge">1:15 - 1:45</span>
+                        <span>Data Visualization & Insights</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene 5: Blockchain Tokenization (105-135s) -->
+        <div class="scene" data-duration="30" data-voice="Revolutionary blockchain integration lets you tokenize your aquaponic systems. Create digital assets, enable fractional ownership, and participate in the future of decentralized agriculture on the carbon-negative Algorand network.">
+            <div class="scene-content">
+                <div class="scene-image">
+                    <img src="/demo-assets/tokenization-interface.png" alt="Blockchain Tokenization" />
+                    <div class="scene-overlay">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white" opacity="0.8">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="scene-text">
+                    <h3 class="scene-title">Blockchain Asset Tokenization</h3>
+                    <p class="scene-description">
+                        Pioneer the future of agricultural finance with blockchain tokenization. Convert your aquaponic systems into 
+                        tradeable digital assets, enable community-supported agriculture through fractional ownership, and leverage 
+                        the carbon-negative Algorand network for sustainable transactions.
+                    </p>
+                    <div class="scene-timing">
+                        <span class="timing-badge">1:45 - 2:15</span>
+                        <span>Blockchain Integration & Tokenization</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene 6: Pro Features (135-165s) -->
+        <div class="scene" data-duration="30" data-voice="Upgrade to Pro Designer for unlimited simulations, advanced analytics, priority support, and commercial usage rights. Join thousands of users building the future of sustainable agriculture.">
+            <div class="scene-content">
+                <div class="scene-image">
+                    <img src="/demo-assets/pro-features.png" alt="Pro Designer Features" />
+                    <div class="scene-overlay">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white" opacity="0.8">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="scene-text">
+                    <h3 class="scene-title">Pro Designer Subscription</h3>
+                    <p class="scene-description">
+                        Unlock the full potential of AquaGuardian with Pro Designer. Get unlimited system simulations, 
+                        advanced performance analytics, unlimited token minting, priority customer support, detailed export features, 
+                        and commercial usage rights for just $9/month.
+                    </p>
+                    <div class="scene-timing">
+                        <span class="timing-badge">2:15 - 2:45</span>
+                        <span>Premium Features & Subscription</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene 7: Call to Action (165-180s) -->
+        <div class="scene" data-duration="15" data-voice="Ready to revolutionize your approach to sustainable agriculture? Visit aquaguardian.green and start designing your perfect aquaponic system today. The future of farming is in your hands.">
+            <div class="scene-content">
+                <div class="scene-image">
+                    <img src="/demo-assets/call-to-action.png" alt="Get Started Today" />
+                    <div class="scene-overlay">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white" opacity="0.8">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="scene-text">
+                    <h3 class="scene-title">Start Your Journey Today</h3>
+                    <p class="scene-description">
+                        Join the aquaponic revolution at <strong>aquaguardian.green</strong>. Design, simulate, and optimize 
+                        your sustainable agriculture systems with cutting-edge technology. Your perfect aquaponic ecosystem awaits.
+                    </p>
+                    <div class="scene-timing">
+                        <span class="timing-badge">2:45 - 3:00</span>
+                        <span>Call to Action & Website</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="export-section">
+            <h2 style="margin-bottom: 2rem; text-align: center;">Video Production Pipeline</h2>
+            <div class="export-grid">
+                <div class="export-card">
+                    <h3 style="margin-bottom: 1rem; color: #059669;">📹 FFmpeg Export</h3>
+                    <p style="margin-bottom: 1rem; color: #64748b;">
+                        Generate the final MP4 video using the FFmpeg command below. This combines all scene images with timing and transitions.
+                    </p>
+                    <div class="code-block">npm run build:video</div>
+                </div>
+                
+                <div class="export-card">
+                    <h3 style="margin-bottom: 1rem; color: #059669;">🎙️ Voice-over Integration</h3>
+                    <p style="margin-bottom: 1rem; color: #64748b;">
+                        ElevenLabs API integration for professional voice-over generation. Set your ELEVEN_API_KEY environment variable.
+                    </p>
+                    <div class="code-block">ELEVEN_API_KEY=your_key_here</div>
+                </div>
+                
+                <div class="export-card">
+                    <h3 style="margin-bottom: 1rem; color: #059669;">⚙️ Asset Management</h3>
+                    <p style="margin-bottom: 1rem; color: #64748b;">
+                        All demo assets are organized in /demo-assets/ directory. Images are optimized for 1920x1080 video output.
+                    </p>
+                    <div class="code-block">demo-assets/*.png</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Storyboard State Management
+        let currentScene = 0;
+        let isPlaying = false;
+        let startTime = null;
+        let pausedTime = 0;
+        let animationFrame = null;
+        let voiceovers = {};
+        let currentAudio = null;
+
+        const scenes = document.querySelectorAll('.scene');
+        const totalDuration = 180; // 3 minutes in seconds
+        
+        // Scene timing data
+        const sceneTiming = [
+            { start: 0, duration: 15 },
+            { start: 15, duration: 30 },
+            { start: 45, duration: 30 },
+            { start: 75, duration: 30 },
+            { start: 105, duration: 30 },
+            { start: 135, duration: 30 },
+            { start: 165, duration: 15 }
+        ];
+
+        // ElevenLabs Voice-over Integration
+        async function preloadVoiceovers() {
+            const apiKey = getElevenLabsApiKey();
+            if (!apiKey) {
+                updateVoiceStatus('error', 'ElevenLabs API key not found. Set ELEVEN_API_KEY environment variable.');
+                return;
+            }
+
+            updateVoiceStatus('loading', 'Loading voice-over segments...');
+            
+            try {
+                const voiceId = 'EXAVITQu4vr4xnSDxMaL'; // Bella voice ID
+                
+                for (let i = 0; i < scenes.length; i++) {
+                    const scene = scenes[i];
+                    const voiceText = scene.getAttribute('data-voice');
+                    
+                    if (voiceText) {
+                        const audioBlob = await generateVoiceover(apiKey, voiceId, voiceText);
+                        voiceovers[i] = URL.createObjectURL(audioBlob);
+                    }
+                }
+                
+                updateVoiceStatus('ready', `Voice-over loaded for ${Object.keys(voiceovers).length} scenes`);
+            } catch (error) {
+                console.error('Voice-over generation failed:', error);
+                updateVoiceStatus('error', 'Failed to generate voice-over. Check API key and connection.');
+            }
+        }
+
+        async function generateVoiceover(apiKey, voiceId, text) {
+            const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'audio/mpeg',
+                    'Content-Type': 'application/json',
+                    'xi-api-key': apiKey
+                },
+                body: JSON.stringify({
+                    text: text,
+                    model_id: 'eleven_monolingual_v1',
+                    voice_settings: {
+                        stability: 0.5,
+                        similarity_boost: 0.5
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`ElevenLabs API error: ${response.status}`);
+            }
+
+            return await response.blob();
+        }
+
+        function getElevenLabsApiKey() {
+            // In a real environment, this would come from environment variables
+            // For demo purposes, check localStorage or prompt user
+            return localStorage.getItem('ELEVEN_API_KEY') || 
+                   prompt('Enter your ElevenLabs API key (optional):');
+        }
+
+        function updateVoiceStatus(status, message) {
+            const indicator = document.getElementById('voiceStatus');
+            const text = document.getElementById('voiceStatusText');
+            
+            indicator.className = `status-indicator ${status}`;
+            text.textContent = `Voice-over: ${message}`;
+        }
+
+        // Storyboard Playback Controls
+        function playStoryboard() {
+            if (!isPlaying) {
+                isPlaying = true;
+                startTime = Date.now() - pausedTime;
+                updateStoryboard();
+            }
+        }
+
+        function pauseStoryboard() {
+            if (isPlaying) {
+                isPlaying = false;
+                pausedTime = Date.now() - startTime;
+                if (animationFrame) {
+                    cancelAnimationFrame(animationFrame);
+                }
+                if (currentAudio) {
+                    currentAudio.pause();
+                }
+            }
+        }
+
+        function resetStoryboard() {
+            isPlaying = false;
+            currentScene = 0;
+            pausedTime = 0;
+            startTime = null;
+            
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+            
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            
+            showScene(0);
+            updateProgress(0);
+            updateTimeDisplay(0);
+        }
+
+        function updateStoryboard() {
+            if (!isPlaying) return;
+
+            const elapsed = (Date.now() - startTime) / 1000;
+            const progress = Math.min(elapsed / totalDuration, 1);
+            
+            updateProgress(progress * 100);
+            updateTimeDisplay(elapsed);
+            
+            // Determine current scene based on elapsed time
+            const newScene = sceneTiming.findIndex(scene => 
+                elapsed >= scene.start && elapsed < scene.start + scene.duration
+            );
+            
+            if (newScene !== -1 && newScene !== currentScene) {
+                showScene(newScene);
+                playVoiceover(newScene);
+                currentScene = newScene;
+            }
+            
+            // Check if storyboard is complete
+            if (elapsed >= totalDuration) {
+                isPlaying = false;
+                updateTimeDisplay(totalDuration);
+                return;
+            }
+            
+            animationFrame = requestAnimationFrame(updateStoryboard);
+        }
+
+        function showScene(sceneIndex) {
+            scenes.forEach((scene, index) => {
+                scene.classList.toggle('active', index === sceneIndex);
+            });
+        }
+
+        function playVoiceover(sceneIndex) {
+            if (currentAudio) {
+                currentAudio.pause();
+            }
+            
+            if (voiceovers[sceneIndex]) {
+                currentAudio = new Audio(voiceovers[sceneIndex]);
+                currentAudio.play().catch(console.error);
+            }
+        }
+
+        function updateProgress(percentage) {
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+        }
+
+        function updateTimeDisplay(elapsed) {
+            const current = formatTime(elapsed);
+            const total = formatTime(totalDuration);
+            document.getElementById('currentTime').textContent = `${current} / ${total}`;
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showScene(0);
+            updateVoiceStatus('', 'Not loaded');
+            
+            // Check for ElevenLabs API key
+            const apiKey = localStorage.getItem('ELEVEN_API_KEY');
+            if (apiKey) {
+                updateVoiceStatus('', 'API key found - click "Load Voice-over" to generate audio');
+            }
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', function(e) {
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    isPlaying ? pauseStoryboard() : playStoryboard();
+                    break;
+                case 'KeyR':
+                    resetStoryboard();
+                    break;
+                case 'KeyV':
+                    preloadVoiceovers();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>

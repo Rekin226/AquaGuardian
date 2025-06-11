@@ -1,0 +1,13 @@
+# Demo Assets Directory
+
+This directory contains the PNG assets used in the video storyboard:
+
+- hero-splash.png - Welcome screen with AquaGuardian branding
+- wizard-flow.png - Design wizard interface screenshots
+- simulation-dashboard.png - Performance simulation results
+- analytics-charts.png - Data visualization and charts
+- tokenization-interface.png - Blockchain tokenization features
+- pro-features.png - Pro Designer subscription benefits
+- call-to-action.png - Final call-to-action screen
+
+All images should be optimized for 1920x1080 video output.

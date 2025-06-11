@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "build:video": "node scripts/build-video.js",
+    "storyboard": "open public/storyboard.html"
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "^9.1.0",
