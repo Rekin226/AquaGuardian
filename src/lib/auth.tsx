@@ -19,6 +19,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Check if Supabase is properly configured
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('Supabase environment variables not configured. Running in demo mode.')
+      setLoading(false)
+      return
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
@@ -57,12 +67,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(data)
     } catch (error) {
       console.error('Error fetching profile:', error)
+      // Create a mock profile for demo purposes
+      setProfile({
+        id: userId,
+        email: 'demo@aquaguardian.green',
+        role: 'farmer',
+        created_at: new Date().toISOString()
+      })
     } finally {
       setLoading(false)
     }
   }
 
   const signIn = async (email: string, password: string) => {
+    // Check if Supabase is configured
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+      // Demo mode - create mock user
+      const mockUser = {
+        id: 'demo-user-id',
+        email: email,
+        aud: 'authenticated',
+        role: 'authenticated',
+        email_confirmed_at: new Date().toISOString(),
+        phone: '',
+        confirmed_at: new Date().toISOString(),
+        last_sign_in_at: new Date().toISOString(),
+        app_metadata: {},
+        user_metadata: {},
+        identities: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as SupabaseUser
+
+      setUser(mockUser)
+      setProfile({
+        id: mockUser.id,
+        email: email,
+        role: 'farmer',
+        created_at: new Date().toISOString()
+      })
+      
+      return { error: null }
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -71,6 +121,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, role = 'farmer') => {
+    // Check if Supabase is configured
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+      // Demo mode - create mock user
+      const mockUser = {
+        id: 'demo-user-id',
+        email: email,
+        aud: 'authenticated',
+        role: 'authenticated',
+        email_confirmed_at: new Date().toISOString(),
+        phone: '',
+        confirmed_at: new Date().toISOString(),
+        last_sign_in_at: new Date().toISOString(),
+        app_metadata: {},
+        user_metadata: {},
+        identities: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as SupabaseUser
+
+      setUser(mockUser)
+      setProfile({
+        id: mockUser.id,
+        email: email,
+        role: role as 'farmer' | 'buyer' | 'admin',
+        created_at: new Date().toISOString()
+      })
+      
+      return { error: null }
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -90,6 +173,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    // Check if Supabase is configured
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+      // Demo mode - just clear state
+      setUser(null)
+      setProfile(null)
+      return
+    }
+
     await supabase.auth.signOut()
   }
 

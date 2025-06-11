@@ -10,6 +10,7 @@ import { Wizard } from './pages/Wizard';
 import { Marketplace } from './pages/Marketplace';
 import { Settings } from './pages/Settings';
 import { Billing } from './pages/Billing';
+import { Auth } from './pages/Auth';
 
 const queryClient = new QueryClient();
 
@@ -25,17 +26,27 @@ function AuthenticatedApp() {
   }
 
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Navigate to={user ? "/wizard" : "/auth"} replace />} />
-        <Route path="/wizard" element={user ? <Wizard /> : <Navigate to="/auth" replace />} />
-        <Route path="/dashboard/:id" element={user ? <Dashboard /> : <Navigate to="/auth" replace />} />
-        <Route path="/marketplace" element={user ? <Marketplace /> : <Navigate to="/auth" replace />} />
-        <Route path="/settings" element={user ? <Settings /> : <Navigate to="/auth" replace />} />
-        <Route path="/account/billing" element={user ? <Billing /> : <Navigate to="/auth" replace />} />
-        <Route path="/auth" element={<div className="p-8 text-center">Auth page coming soon</div>} />
-      </Routes>
-    </Layout>
+    <Routes>
+      <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/wizard" replace />} />
+      <Route path="/" element={<Navigate to={user ? "/wizard" : "/auth"} replace />} />
+      
+      {/* Protected Routes */}
+      {user ? (
+        <Route path="/*" element={
+          <Layout>
+            <Routes>
+              <Route path="/wizard" element={<Wizard />} />
+              <Route path="/dashboard/:id" element={<Dashboard />} />
+              <Route path="/marketplace" element={<Marketplace />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/account/billing" element={<Billing />} />
+            </Routes>
+          </Layout>
+        } />
+      ) : (
+        <Route path="/*" element={<Navigate to="/auth" replace />} />
+      )}
+    </Routes>
   );
 }
 
