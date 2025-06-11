@@ -327,7 +327,7 @@ export function Settings() {
               className="w-full text-red-600 hover:text-red-700 py-3 text-center font-medium transition-colors"
             >
               Sign Out
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>
