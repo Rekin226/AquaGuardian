@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { useSubscription } from '../lib/subscription'
 import { supabase } from '../lib/supabase'
 import { WizardStep } from '../components/wizard/WizardStep'
+import { ProFeatureButton } from '../components/ProGate'
 import { motion } from 'framer-motion'
 import { 
   Home, 
@@ -11,7 +13,8 @@ import {
   DollarSign, 
   Zap,
   CheckCircle,
-  Sparkles
+  Sparkles,
+  Crown
 } from 'lucide-react'
 
 interface WizardData {
@@ -25,8 +28,10 @@ interface WizardData {
 export function Wizard() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { isPro } = useSubscription()
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [simulationCount, setSimulationCount] = useState(0)
   const [data, setData] = useState<WizardData>({
     farmSize: '',
     fishSpecies: [],
@@ -36,6 +41,7 @@ export function Wizard() {
   })
 
   const totalSteps = 5
+  const maxFreeSimulations = 3
 
   const handleNext = async () => {
     if (currentStep < totalSteps) {
@@ -54,6 +60,11 @@ export function Wizard() {
   const completeWizard = async () => {
     if (!user) return
 
+    // Check simulation limit for free users
+    if (!isPro && simulationCount >= maxFreeSimulations) {
+      return // This will be handled by the ProFeatureButton
+    }
+
     setLoading(true)
     try {
       const designName = `Aquaponic System - ${new Date().toLocaleDateString()}`
@@ -70,6 +81,7 @@ export function Wizard() {
 
       if (error) throw error
 
+      setSimulationCount(prev => prev + 1)
       navigate(`/dashboard/${design.id}`)
     } catch (error) {
       console.error('Error creating design:', error)
@@ -113,6 +125,29 @@ export function Wizard() {
             canGoNext={canGoNext()}
           >
             <div className="space-y-4">
+              {/* Simulation Counter for Free Users */}
+              {!isPro && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Crown className="h-5 w-5 text-amber-600" />
+                      <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                        Free Plan: {simulationCount}/{maxFreeSimulations} simulations used
+                      </span>
+                    </div>
+                    {simulationCount >= maxFreeSimulations && (
+                      <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-800 px-2 py-1 rounded-full">
+                        Upgrade for unlimited
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   { value: 'small', label: 'Small (Home/Hobby)', desc: 'Up to 50 sq ft', icon: '🏠' },
@@ -352,7 +387,7 @@ export function Wizard() {
             description="How do you plan to power your aquaponic system?"
             currentStep={currentStep}
             totalSteps={totalSteps}
-            onNext={handleNext}
+            onNext={!isPro && simulationCount >= maxFreeSimulations ? () => {} : handleNext}
             onPrevious={handlePrevious}
             canGoNext={canGoNext()}
           >
@@ -395,6 +430,31 @@ export function Wizard() {
                   </motion.button>
                 ))}
               </div>
+
+              {/* Pro Gate for Final Step */}
+              {!isPro && simulationCount >= maxFreeSimulations && (
+                <div className="mt-8 p-6 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl">
+                  <div className="text-center">
+                    <Crown className="h-12 w-12 text-emerald-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-200 mb-2">
+                      Upgrade to Continue
+                    </h3>
+                    <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-4">
+                      You've used all {maxFreeSimulations} free simulations. Upgrade to Pro Designer for unlimited access.
+                    </p>
+                    <ProFeatureButton
+                      feature="unlimited system simulations"
+                      onClick={completeWizard}
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-8 py-3 rounded-2xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Crown className="h-5 w-5" />
+                        <span>Upgrade to Pro</span>
+                      </div>
+                    </ProFeatureButton>
+                  </div>
+                </div>
+              )}
             </div>
           </WizardStep>
         )

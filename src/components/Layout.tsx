@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useTheme } from '../lib/theme'
+import { useSubscription } from '../lib/subscription'
+import { ProBadge } from './ProGate'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Waves, 
@@ -15,7 +17,9 @@ import {
   ShoppingCart,
   Menu,
   X,
-  Home
+  Home,
+  CreditCard,
+  Crown
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -25,15 +29,26 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { user, profile, signOut } = useAuth()
   const { theme, setTheme, isDark } = useTheme()
+  const { isPro } = useSubscription()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const navigation = [
     { name: 'Dashboard', href: '/wizard', icon: Home, color: 'text-emerald-600 dark:text-emerald-400' },
-    { name: 'Designs', href: '/designs', icon: LayoutDashboard, color: 'text-teal-600 dark:text-teal-400' },
+    { name: 'My Designs', href: '/designs', icon: LayoutDashboard, color: 'text-teal-600 dark:text-teal-400' },
     { name: 'Marketplace', href: '/marketplace', icon: ShoppingCart, color: 'text-emerald-600 dark:text-emerald-400' },
     { name: 'Settings', href: '/settings', icon: Settings, color: 'text-slate-600 dark:text-slate-400' },
   ]
+
+  // Add billing to navigation for authenticated users
+  if (user) {
+    navigation.splice(-1, 0, {
+      name: 'Billing',
+      href: '/account/billing',
+      icon: CreditCard,
+      color: 'text-purple-600 dark:text-purple-400'
+    })
+  }
 
   const themeIcons = {
     light: Sun,
@@ -90,9 +105,12 @@ export function Layout({ children }: LayoutProps) {
               <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl">
                 <Waves className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                AquaGuardian
-              </span>
+              <div className="flex items-center space-x-2">
+                <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  AquaGuardian
+                </span>
+                <ProBadge />
+              </div>
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -147,11 +165,19 @@ export function Layout({ children }: LayoutProps) {
                   <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
                     {profile?.email}
                   </p>
-                  {profile?.role === 'admin' && (
-                    <span className="inline-flex items-center px-2 py-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded-full">
-                      Admin
-                    </span>
-                  )}
+                  <div className="flex items-center space-x-2">
+                    {profile?.role === 'admin' && (
+                      <span className="inline-flex items-center px-2 py-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded-full">
+                        Admin
+                      </span>
+                    )}
+                    {isPro && (
+                      <span className="inline-flex items-center space-x-1 px-2 py-1 text-xs bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full">
+                        <Crown className="h-3 w-3" />
+                        <span>Pro</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               
@@ -200,6 +226,7 @@ export function Layout({ children }: LayoutProps) {
             <span className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
               AquaGuardian
             </span>
+            <ProBadge />
           </Link>
 
           {!user && (
