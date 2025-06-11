@@ -1,4 +1,5 @@
-import Purchases, { PurchasesOffering, CustomerInfo } from '@revenuecat/purchases-js'
+import * as Purchases from '@revenuecat/purchases-js'
+import { PurchasesOffering, CustomerInfo } from '@revenuecat/purchases-js'
 
 // Initialize RevenueCat
 const REVENUECAT_API_KEY = import.meta.env.VITE_REVENUECAT_API_KEY
