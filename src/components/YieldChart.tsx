@@ -101,6 +101,14 @@ export function YieldChart({ fishYieldKg, vegYieldKg, dailyWaterL }: YieldChartP
               tickLine={false}
               axisLine={false}
             />
+            <YAxis 
+              yAxisId="water"
+              orientation="right"
+              stroke="#64748b"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+            />
             <Tooltip content={<CustomTooltip />} />
             
             <Area
