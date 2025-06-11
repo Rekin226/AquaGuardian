@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { WizardStep } from '../components/wizard/WizardStep'
+import { motion } from 'framer-motion'
 import { 
   Home, 
   Fish, 
   Leaf, 
   DollarSign, 
   Zap,
-  CheckCircle
+  CheckCircle,
+  Sparkles
 } from 'lucide-react'
 
 interface WizardData {
@@ -113,32 +115,40 @@ export function Wizard() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { value: 'small', label: 'Small (Home/Hobby)', desc: 'Up to 50 sq ft' },
-                  { value: 'medium', label: 'Medium (Commercial)', desc: '50-500 sq ft' },
-                  { value: 'large', label: 'Large (Industrial)', desc: '500+ sq ft' },
-                  { value: 'custom', label: 'Custom Size', desc: 'Tell us your specific needs' },
-                ].map((option) => (
-                  <button
+                  { value: 'small', label: 'Small (Home/Hobby)', desc: 'Up to 50 sq ft', icon: '🏠' },
+                  { value: 'medium', label: 'Medium (Commercial)', desc: '50-500 sq ft', icon: '🏢' },
+                  { value: 'large', label: 'Large (Industrial)', desc: '500+ sq ft', icon: '🏭' },
+                  { value: 'custom', label: 'Custom Size', desc: 'Tell us your specific needs', icon: '⚙️' },
+                ].map((option, index) => (
+                  <motion.button
                     key={option.value}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => updateData('farmSize', option.value)}
-                    className={`p-4 text-left rounded-lg border-2 transition-all ${
+                    className={`p-6 text-left rounded-2xl border-2 transition-all duration-200 ${
                       data.farmSize === option.value
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                        ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 shadow-lg'
+                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg'
                     }`}
                   >
-                    <div className="flex items-start space-x-3">
-                      <Home className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-1" />
-                      <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">
+                    <div className="flex items-start space-x-4">
+                      <div className="text-2xl">{option.icon}</div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
                           {option.label}
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
                           {option.desc}
                         </p>
                       </div>
+                      {data.farmSize === option.value && (
+                        <CheckCircle className="h-5 w-5 text-emerald-500" />
+                      )}
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
@@ -159,42 +169,54 @@ export function Wizard() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
-                  'Tilapia',
-                  'Trout',
-                  'Catfish',
-                  'Bass',
-                  'Perch',
-                  'Salmon',
-                  'Koi',
-                  'Goldfish',
-                ].map((species) => (
-                  <button
-                    key={species}
+                  { name: 'Tilapia', emoji: '🐟', difficulty: 'Beginner' },
+                  { name: 'Trout', emoji: '🎣', difficulty: 'Intermediate' },
+                  { name: 'Catfish', emoji: '🐠', difficulty: 'Beginner' },
+                  { name: 'Bass', emoji: '🐟', difficulty: 'Advanced' },
+                  { name: 'Perch', emoji: '🐠', difficulty: 'Intermediate' },
+                  { name: 'Salmon', emoji: '🐟', difficulty: 'Advanced' },
+                  { name: 'Koi', emoji: '🐠', difficulty: 'Intermediate' },
+                  { name: 'Goldfish', emoji: '🐟', difficulty: 'Beginner' },
+                ].map((species, index) => (
+                  <motion.button
+                    key={species.name}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => {
-                      const newSpecies = data.fishSpecies.includes(species)
-                        ? data.fishSpecies.filter(s => s !== species)
-                        : [...data.fishSpecies, species]
+                      const newSpecies = data.fishSpecies.includes(species.name)
+                        ? data.fishSpecies.filter(s => s !== species.name)
+                        : [...data.fishSpecies, species.name]
                       updateData('fishSpecies', newSpecies)
                     }}
-                    className={`p-3 text-left rounded-lg border-2 transition-all ${
-                      data.fishSpecies.includes(species)
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    className={`p-4 text-left rounded-2xl border-2 transition-all duration-200 ${
+                      data.fishSpecies.includes(species.name)
+                        ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 shadow-lg'
+                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <Fish className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {species}
-                      </span>
-                      {data.fishSpecies.includes(species) && (
-                        <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 ml-auto" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl">{species.emoji}</span>
+                        <div>
+                          <span className="font-medium text-slate-900 dark:text-white">
+                            {species.name}
+                          </span>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {species.difficulty}
+                          </p>
+                        </div>
+                      </div>
+                      {data.fishSpecies.includes(species.name) && (
+                        <CheckCircle className="h-5 w-5 text-emerald-500" />
                       )}
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-slate-600 dark:text-slate-400 text-center">
                 Select one or more fish species (recommended: start with one)
               </p>
             </div>
@@ -215,42 +237,54 @@ export function Wizard() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
-                  'Lettuce',
-                  'Spinach',
-                  'Kale',
-                  'Herbs (Basil, Mint)',
-                  'Tomatoes',
-                  'Cucumbers',
-                  'Peppers',
-                  'Strawberries',
-                ].map((crop) => (
-                  <button
-                    key={crop}
+                  { name: 'Lettuce', emoji: '🥬', difficulty: 'Beginner' },
+                  { name: 'Spinach', emoji: '🥬', difficulty: 'Beginner' },
+                  { name: 'Kale', emoji: '🥬', difficulty: 'Beginner' },
+                  { name: 'Herbs (Basil, Mint)', emoji: '🌿', difficulty: 'Beginner' },
+                  { name: 'Tomatoes', emoji: '🍅', difficulty: 'Intermediate' },
+                  { name: 'Cucumbers', emoji: '🥒', difficulty: 'Intermediate' },
+                  { name: 'Peppers', emoji: '🌶️', difficulty: 'Intermediate' },
+                  { name: 'Strawberries', emoji: '🍓', difficulty: 'Advanced' },
+                ].map((crop, index) => (
+                  <motion.button
+                    key={crop.name}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => {
-                      const newCrops = data.cropChoice.includes(crop)
-                        ? data.cropChoice.filter(c => c !== crop)
-                        : [...data.cropChoice, crop]
+                      const newCrops = data.cropChoice.includes(crop.name)
+                        ? data.cropChoice.filter(c => c !== crop.name)
+                        : [...data.cropChoice, crop.name]
                       updateData('cropChoice', newCrops)
                     }}
-                    className={`p-3 text-left rounded-lg border-2 transition-all ${
-                      data.cropChoice.includes(crop)
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    className={`p-4 text-left rounded-2xl border-2 transition-all duration-200 ${
+                      data.cropChoice.includes(crop.name)
+                        ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-900/20 dark:to-emerald-900/20 shadow-lg'
+                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <Leaf className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {crop}
-                      </span>
-                      {data.cropChoice.includes(crop) && (
-                        <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 ml-auto" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl">{crop.emoji}</span>
+                        <div>
+                          <span className="font-medium text-slate-900 dark:text-white">
+                            {crop.name}
+                          </span>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {crop.difficulty}
+                          </p>
+                        </div>
+                      </div>
+                      {data.cropChoice.includes(crop.name) && (
+                        <CheckCircle className="h-5 w-5 text-teal-500" />
                       )}
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-slate-600 dark:text-slate-400 text-center">
                 Select the crops you want to grow (leafy greens are easiest for beginners)
               </p>
             </div>
@@ -271,32 +305,40 @@ export function Wizard() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 {[
-                  { value: 'under-1000', label: 'Under $1,000', desc: 'Basic starter system' },
-                  { value: '1000-5000', label: '$1,000 - $5,000', desc: 'Mid-range home system' },
-                  { value: '5000-20000', label: '$5,000 - $20,000', desc: 'Commercial starter' },
-                  { value: 'over-20000', label: 'Over $20,000', desc: 'Large commercial system' },
-                ].map((option) => (
-                  <button
+                  { value: 'under-1000', label: 'Under $1,000', desc: 'Basic starter system', emoji: '💰' },
+                  { value: '1000-5000', label: '$1,000 - $5,000', desc: 'Mid-range home system', emoji: '💵' },
+                  { value: '5000-20000', label: '$5,000 - $20,000', desc: 'Commercial starter', emoji: '💸' },
+                  { value: 'over-20000', label: 'Over $20,000', desc: 'Large commercial system', emoji: '🏦' },
+                ].map((option, index) => (
+                  <motion.button
                     key={option.value}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => updateData('budget', option.value)}
-                    className={`p-4 text-left rounded-lg border-2 transition-all ${
+                    className={`p-6 text-left rounded-2xl border-2 transition-all duration-200 ${
                       data.budget === option.value
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                        ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 shadow-lg'
+                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg'
                     }`}
                   >
-                    <div className="flex items-start space-x-3">
-                      <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400 mt-1" />
-                      <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">
+                    <div className="flex items-start space-x-4">
+                      <span className="text-2xl">{option.emoji}</span>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
                           {option.label}
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
                           {option.desc}
                         </p>
                       </div>
+                      {data.budget === option.value && (
+                        <CheckCircle className="h-5 w-5 text-emerald-500" />
+                      )}
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
@@ -317,32 +359,40 @@ export function Wizard() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 {[
-                  { value: 'grid', label: 'Grid Electricity', desc: 'Standard electrical power' },
-                  { value: 'solar', label: 'Solar Power', desc: 'Renewable solar energy' },
-                  { value: 'hybrid', label: 'Hybrid (Grid + Solar)', desc: 'Combination approach' },
-                  { value: 'generator', label: 'Generator Backup', desc: 'Backup power solution' },
-                ].map((option) => (
-                  <button
+                  { value: 'grid', label: 'Grid Electricity', desc: 'Standard electrical power', emoji: '⚡' },
+                  { value: 'solar', label: 'Solar Power', desc: 'Renewable solar energy', emoji: '☀️' },
+                  { value: 'hybrid', label: 'Hybrid (Grid + Solar)', desc: 'Combination approach', emoji: '🔋' },
+                  { value: 'generator', label: 'Generator Backup', desc: 'Backup power solution', emoji: '🔌' },
+                ].map((option, index) => (
+                  <motion.button
                     key={option.value}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => updateData('energySource', option.value)}
-                    className={`p-4 text-left rounded-lg border-2 transition-all ${
+                    className={`p-6 text-left rounded-2xl border-2 transition-all duration-200 ${
                       data.energySource === option.value
-                        ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                        ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 shadow-lg'
+                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg'
                     }`}
                   >
-                    <div className="flex items-start space-x-3">
-                      <Zap className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-1" />
-                      <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">
+                    <div className="flex items-start space-x-4">
+                      <span className="text-2xl">{option.emoji}</span>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
                           {option.label}
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
                           {option.desc}
                         </p>
                       </div>
+                      {data.energySource === option.value && (
+                        <CheckCircle className="h-5 w-5 text-yellow-500" />
+                      )}
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
@@ -356,17 +406,30 @@ export function Wizard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Creating your aquaponic design...</p>
-        </div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="rounded-full h-16 w-16 border-4 border-emerald-200 border-t-emerald-600 mx-auto mb-4"
+          />
+          <p className="text-slate-600 dark:text-slate-400 mb-2">Creating your aquaponic design...</p>
+          <div className="flex items-center justify-center space-x-1 text-emerald-600">
+            <Sparkles className="h-4 w-4 animate-pulse" />
+            <span className="text-sm">This will just take a moment</span>
+            <Sparkles className="h-4 w-4 animate-pulse" />
+          </div>
+        </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
       {renderStep()}
     </div>
   )

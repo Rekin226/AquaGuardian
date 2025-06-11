@@ -1,5 +1,6 @@
 import React from 'react'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react'
 
 interface WizardStepProps {
   title: string
@@ -23,59 +24,119 @@ export function WizardStep({
   children,
 }: WizardStepProps) {
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* Progress indicator */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="mb-8"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
             Step {currentStep} of {totalSteps}
           </span>
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
             {Math.round((currentStep / totalSteps) * 100)}% Complete
           </span>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-          <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-          />
+        
+        {/* Progress bar */}
+        <div className="relative">
+          <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3">
+            <motion.div
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 h-3 rounded-full shadow-lg"
+              initial={{ width: 0 }}
+              animate={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
+          </div>
+          
+          {/* Step indicators */}
+          <div className="absolute top-0 left-0 w-full flex justify-between">
+            {Array.from({ length: totalSteps }, (_, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.3, delay: i * 0.1 }}
+                className={`w-3 h-3 rounded-full border-2 ${
+                  i + 1 <= currentStep
+                    ? 'bg-emerald-500 border-emerald-500'
+                    : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'
+                }`}
+              >
+                {i + 1 < currentStep && (
+                  <CheckCircle className="w-3 h-3 text-white -m-0.5" />
+                )}
+              </motion.div>
+            ))}
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Step content */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-8 lg:p-12"
+      >
+        <div className="mb-8">
+          <motion.h1 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-3"
+          >
             {title}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="text-slate-600 dark:text-slate-400 text-lg"
+          >
             {description}
-          </p>
+          </motion.p>
         </div>
 
-        {children}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        >
+          {children}
+        </motion.div>
 
         {/* Navigation buttons */}
-        <div className="flex justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="flex justify-between mt-12 pt-8 border-t border-slate-200 dark:border-slate-700"
+        >
           <button
             onClick={onPrevious}
             disabled={currentStep === 1}
-            className="flex items-center space-x-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center space-x-2 px-6 py-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Previous</span>
           </button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onNext}
             disabled={!canGoNext}
-            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white px-6 py-2 rounded-md font-medium transition-colors disabled:cursor-not-allowed"
+            className="flex items-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-700 text-white px-8 py-3 rounded-2xl font-medium transition-all duration-200 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
           >
             <span>{currentStep === totalSteps ? 'Complete Setup' : 'Next'}</span>
             <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+          </motion.button>
+        </motion.div>
+      </motion.div>
     </div>
   )
 }
