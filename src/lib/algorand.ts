@@ -1,18 +1,18 @@
+// Algorand TestNet Configuration (Inline)
+export const ALGOD_SERVER = "https://testnet-api.algonode.cloud";
+export const ALGOD_TOKEN = "";
+export const CHAIN_ID = "TestNet";
+
 import algosdk from 'algosdk'
 import { PeraWalletConnect } from '@perawallet/connect'
 
-// Algorand configuration
-const ALGORAND_NODE_URL = import.meta.env.VITE_ALGORAND_NODE_URL || 'https://testnet-api.algonode.cloud'
-const ALGORAND_INDEXER_URL = import.meta.env.VITE_ALGORAND_INDEXER_URL || 'https://testnet-idx.algonode.cloud'
-const ALGORAND_NETWORK = import.meta.env.VITE_ALGORAND_NETWORK || 'testnet'
+// Initialize Algorand client with inline constants
+const algodClient = new algosdk.Algodv2(ALGOD_TOKEN, ALGOD_SERVER, '')
+const indexerClient = new algosdk.Indexer('', 'https://testnet-idx.algonode.cloud', '')
 
-// Initialize Algorand client
-const algodClient = new algosdk.Algodv2('', ALGORAND_NODE_URL, '')
-const indexerClient = new algosdk.Indexer('', ALGORAND_INDEXER_URL, '')
-
-// Initialize Pera Wallet
+// Initialize Pera Wallet for TestNet
 const peraWallet = new PeraWalletConnect({
-  chainId: ALGORAND_NETWORK === 'mainnet' ? 416001 : 416002
+  chainId: 416002 // TestNet chain ID
 })
 
 export interface AlgorandAccount {
@@ -210,10 +210,17 @@ export class AlgorandService {
   }
 
   getExplorerUrl(txId: string): string {
-    const baseUrl = ALGORAND_NETWORK === 'mainnet' 
-      ? 'https://algoexplorer.io/tx'
-      : 'https://testnet.algoexplorer.io/tx'
-    return `${baseUrl}/${txId}`
+    // Always use TestNet explorer with inline config
+    return `https://testnet.algoexplorer.io/tx/${txId}`
+  }
+
+  getNetworkInfo() {
+    return {
+      server: ALGOD_SERVER,
+      token: ALGOD_TOKEN,
+      chainId: CHAIN_ID,
+      network: 'TestNet'
+    }
   }
 }
 

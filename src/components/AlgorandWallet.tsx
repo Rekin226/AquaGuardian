@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { algorand, AlgorandAccount } from '../lib/algorand'
+import { algorand, AlgorandAccount, ALGOD_SERVER, CHAIN_ID } from '../lib/algorand'
 import { 
   Wallet, 
   ExternalLink, 
@@ -8,7 +8,8 @@ import {
   CheckCircle, 
   AlertCircle,
   Loader,
-  Coins
+  Coins,
+  Info
 } from 'lucide-react'
 
 interface AlgorandWalletProps {
@@ -107,9 +108,23 @@ export function AlgorandWallet({ onAccountChange }: AlgorandWalletProps) {
           <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
             Connect Algorand Wallet
           </h3>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
             Connect your Pera Wallet to enable blockchain tokenization features
           </p>
+
+          {/* Network Info */}
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+            <div className="flex items-center space-x-2 mb-2">
+              <Info className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Network Configuration
+              </span>
+            </div>
+            <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+              <div>Network: {CHAIN_ID}</div>
+              <div>Node: {ALGOD_SERVER}</div>
+            </div>
+          </div>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center space-x-2">
@@ -162,7 +177,7 @@ export function AlgorandWallet({ onAccountChange }: AlgorandWalletProps) {
               Algorand Wallet Connected
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Ready for blockchain operations
+              {CHAIN_ID} Network
             </p>
           </div>
         </div>

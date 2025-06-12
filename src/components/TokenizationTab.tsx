@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../lib/auth'
 import { supabase, Design, Token } from '../lib/supabase'
 import { SimulationResult } from '../lib/simulator'
+import { algorand } from '../lib/algorand'
 import { 
   Coins, 
   TrendingUp, 
@@ -679,11 +680,8 @@ export function TokenizationTab({ design, simulation }: TokenizationTabProps) {
 
   const handleViewToken = (token: Token) => {
     if (token.algorand_tx) {
-      // Determine the correct explorer URL based on network
-      const isMainnet = import.meta.env.VITE_ALGORAND_NETWORK === 'mainnet'
-      const explorerUrl = isMainnet 
-        ? `https://algoexplorer.io/tx/${token.algorand_tx}`
-        : `https://testnet.algoexplorer.io/tx/${token.algorand_tx}`
+      // Use inline testnet explorer URL
+      const explorerUrl = `https://testnet.algoexplorer.io/tx/${token.algorand_tx}`
       
       // Open in new tab
       window.open(explorerUrl, '_blank', 'noopener,noreferrer')
@@ -780,7 +778,7 @@ export function TokenizationTab({ design, simulation }: TokenizationTabProps) {
               Blockchain Security
             </h3>
             <p className="text-lg font-semibold text-teal-600">
-              Algorand Network
+              Algorand TestNet
             </p>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
               Carbon-negative blockchain

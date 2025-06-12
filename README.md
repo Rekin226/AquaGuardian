@@ -19,7 +19,7 @@ A comprehensive aquaponic system design and simulation platform with blockchain 
 
 ### 🔗 Blockchain Integration
 - **Asset Tokenization**: Convert aquaponic systems into tradeable digital assets
-- **Algorand Network**: Carbon-negative blockchain for sustainable tokenization
+- **Algorand TestNet**: Carbon-negative blockchain for sustainable tokenization (inline configuration)
 - **Fractional Ownership**: Enable community-supported agriculture models
 - **Performance-Based Value**: Token value tied to actual system metrics
 
@@ -36,7 +36,7 @@ A comprehensive aquaponic system design and simulation platform with blockchain 
 - **Animation**: Framer Motion
 - **Charts**: Recharts for data visualization
 - **Backend**: Supabase (PostgreSQL, Auth, RLS)
-- **Blockchain**: Algorand SDK, AlgoKit Utils
+- **Blockchain**: Algorand SDK, AlgoKit Utils (TestNet with inline config)
 - **Payments**: RevenueCat Web SDK
 - **Build**: Vite, ESLint, PostCSS
 
@@ -65,16 +65,31 @@ To set up the custom domain:
 Required environment variables for full functionality:
 
 ```env
-# Supabase Configuration
+# Supabase Configuration (REQUIRED)
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# RevenueCat Configuration
+# RevenueCat Configuration (REQUIRED for subscriptions)
 VITE_REVENUECAT_API_KEY=your_revenuecat_api_key
 
-# ElevenLabs Voice-over (Optional)
+# ElevenLabs Voice-over (OPTIONAL for video production)
 ELEVEN_API_KEY=your_elevenlabs_api_key
 ```
+
+**Note**: Algorand TestNet configuration is now handled with inline constants in `src/lib/algorand.ts`. No environment variables needed for blockchain features.
+
+## Algorand Configuration
+
+The application uses **inline TestNet configuration** for Algorand blockchain integration:
+
+```typescript
+// src/lib/algorand.ts
+export const ALGOD_SERVER = "https://testnet-api.algonode.cloud";
+export const ALGOD_TOKEN = "";
+export const CHAIN_ID = "TestNet";
+```
+
+This eliminates the need for Algorand environment variables and ensures consistent TestNet connectivity across all deployments.
 
 ## Database Schema
 
@@ -102,6 +117,94 @@ npm test
 # Build for production
 npm run build
 ```
+
+## Testing & QA
+
+### 🧪 Comprehensive Test Suite
+
+AquaGuardian includes a robust QA suite with multiple testing layers:
+
+#### Unit Tests
+```bash
+# Run unit tests with coverage
+npm run test:coverage
+
+# Watch mode for development
+npm test
+```
+
+#### End-to-End Tests
+```bash
+# Run all E2E tests
+npm run test:e2e
+
+# Run with UI for debugging
+npm run test:e2e:ui
+
+# Run in headed mode
+npm run test:e2e:headed
+```
+
+#### Full QA Suite
+```bash
+# Run all tests + validation
+npm run qa:full
+```
+
+### 🎯 Test Coverage
+
+The test suite covers:
+
+- **Authentication Flow**: Sign up, sign in, demo access
+- **Wizard Completion**: All 5 steps with validation
+- **Simulation Accuracy**: Yield calculations > 0, realistic values
+- **Tokenization**: Token creation, Algorand integration
+- **Navigation**: Sidebar, mobile, theme switching
+- **Marketplace**: Search, filters, design cards
+
+### 📊 Coverage Requirements
+
+- **Minimum Coverage**: 80% across all metrics
+- **Branches**: 80%
+- **Functions**: 80%
+- **Lines**: 80%
+- **Statements**: 80%
+
+### 🚨 MUST-FIX Criteria
+
+Tests automatically flag issues as "MUST-FIX" when:
+
+- ❌ **E2E Test Failures**: Any Playwright test fails
+- ❌ **Coverage Below 80%**: Unit test coverage drops below threshold
+- ❌ **Simulation Accuracy**: Yield calculations return 0 or invalid values
+- ❌ **Token Creation**: Blockchain integration fails
+- ❌ **Performance**: Lighthouse scores below 90%
+- ❌ **Bundle Size**: Exceeds 5MB limit
+
+### 🔄 Continuous Integration
+
+GitHub Actions automatically runs:
+
+1. **Multi-Node Testing**: Node.js 18.x and 20.x
+2. **Cross-Browser E2E**: Chrome, Firefox, Safari, Mobile
+3. **Security Audits**: Dependency vulnerabilities
+4. **Performance Analysis**: Bundle size and Lighthouse scores
+5. **Submission Validation**: Devpost readiness check
+
+### 📱 Mobile Testing
+
+E2E tests include mobile viewport testing:
+- **Mobile Chrome**: Pixel 5 simulation
+- **Mobile Safari**: iPhone 12 simulation
+- **Responsive Design**: Breakpoint validation
+
+### 🔍 Test Reports
+
+Automated reports generated:
+- **HTML Report**: Visual test results with screenshots
+- **JSON Report**: Machine-readable results
+- **JUnit XML**: CI/CD integration
+- **Coverage Report**: Detailed coverage analysis
 
 ## Video Production Pipeline
 
