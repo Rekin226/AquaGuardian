@@ -1,72 +1,59 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../lib/auth'
 import { useSubscription } from '../lib/subscription'
-import { revenuecat } from '../lib/revenuecat'
+import { SubscriptionManager } from '../components/SubscriptionManager'
+import { ProBadge } from '../components/ProGate'
 import { 
   Crown, 
   CreditCard, 
-  Calendar, 
-  RefreshCw, 
-  CheckCircle,
-  XCircle,
   ArrowLeft,
-  Loader,
-  AlertCircle
+  CheckCircle,
+  AlertCircle,
+  ExternalLink,
+  Download,
+  FileText,
+  Receipt
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 export function Billing() {
-  const { user } = useAuth()
-  const { subscription, isPro, refreshSubscription } = useSubscription()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const { user, profile } = useAuth()
+  const { isPro } = useSubscription()
+  const [searchParams] = useSearchParams()
+  const [showInvoices, setShowInvoices] = useState(false)
 
-  const handleRefresh = async () => {
-    setLoading(true)
-    setError(null)
-    setSuccess(null)
+  // Check for success/cancel parameters from Stripe redirect
+  const paymentSuccess = searchParams.get('success') === 'true'
+  const paymentCanceled = searchParams.get('canceled') === 'true'
 
-    try {
-      await refreshSubscription()
-      setSuccess('Subscription status updated successfully')
-    } catch (error: any) {
-      setError(error.message || 'Failed to refresh subscription')
-    } finally {
-      setLoading(false)
+  // Mock invoice data
+  const invoices = [
+    {
+      id: 'inv_1234567890',
+      date: '2024-01-15',
+      amount: 9.00,
+      status: 'paid',
+      description: 'Pro Designer Monthly Subscription',
+      downloadUrl: '#'
+    },
+    {
+      id: 'inv_0987654321',
+      date: '2023-12-15',
+      amount: 9.00,
+      status: 'paid',
+      description: 'Pro Designer Monthly Subscription',
+      downloadUrl: '#'
+    },
+    {
+      id: 'inv_1122334455',
+      date: '2023-11-15',
+      amount: 9.00,
+      status: 'paid',
+      description: 'Pro Designer Monthly Subscription',
+      downloadUrl: '#'
     }
-  }
-
-  const handleRestore = async () => {
-    setLoading(true)
-    setError(null)
-    setSuccess(null)
-
-    try {
-      const result = await revenuecat.restorePurchases()
-      
-      if (result.success) {
-        await refreshSubscription()
-        setSuccess('Purchases restored successfully')
-      } else {
-        setError(result.error || 'Failed to restore purchases')
-      }
-    } catch (error: any) {
-      setError(error.message || 'Failed to restore purchases')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const formatDate = (date: Date | null) => {
-    if (!date) return 'N/A'
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }).format(date)
-  }
+  ]
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -90,219 +77,245 @@ export function Billing() {
                 Billing & Subscription
               </h1>
               <p className="text-slate-600 dark:text-slate-400 mt-1">
-                Manage your Pro Designer subscription
+                Manage your Pro Designer subscription and billing
               </p>
             </div>
           </div>
         </motion.div>
 
-        {/* Status Messages */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex items-center space-x-3"
-          >
-            <XCircle className="h-5 w-5 text-red-600" />
-            <p className="text-red-700 dark:text-red-300">{error}</p>
-          </motion.div>
-        )}
-
-        {success && (
+        {/* Success/Cancel Messages */}
+        {paymentSuccess && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center space-x-3"
           >
             <CheckCircle className="h-5 w-5 text-emerald-600" />
-            <p className="text-emerald-700 dark:text-emerald-300">{success}</p>
+            <div>
+              <p className="font-medium text-emerald-800 dark:text-emerald-200">
+                Payment Successful!
+              </p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                Your Pro Designer subscription is now active. Welcome to the premium experience!
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {paymentCanceled && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-center space-x-3"
+          >
+            <AlertCircle className="h-5 w-5 text-amber-600" />
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">
+                Payment Canceled
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Your payment was canceled. You can try again anytime to upgrade to Pro Designer.
+              </p>
+            </div>
           </motion.div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Subscription Status */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-8"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
-                Subscription Status
-              </h2>
-              <button
-                onClick={handleRefresh}
-                disabled={loading}
-                className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
+          {/* Main Content */}
+          <div className="lg:col-span-2">
+            <SubscriptionManager />
+          </div>
 
-            <div className="space-y-6">
-              {/* Plan Status */}
-              <div className="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl">
-                <div className="flex items-center space-x-4">
-                  <div className={`p-3 rounded-2xl ${isPro ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-slate-200 dark:bg-slate-600'}`}>
-                    <Crown className={`h-6 w-6 ${isPro ? 'text-emerald-600' : 'text-slate-500'}`} />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-white">
-                      {isPro ? 'Pro Designer' : 'Free Plan'}
-                    </h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {isPro ? 'All premium features unlocked' : 'Limited features available'}
-                    </p>
-                  </div>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Account Summary */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6"
+            >
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
+                  <CreditCard className="h-5 w-5 text-emerald-600" />
                 </div>
-                <div className={`px-4 py-2 rounded-full text-sm font-medium ${
-                  isPro 
-                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                    : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-                }`}>
-                  {isPro ? 'Active' : 'Inactive'}
+                <div>
+                  <h3 className="font-semibold text-slate-900 dark:text-white">
+                    Account Summary
+                  </h3>
                 </div>
               </div>
-
-              {/* Subscription Details */}
-              {isPro && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-2xl">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Calendar className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                        Next Billing Date
-                      </span>
-                    </div>
-                    <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                      {formatDate(subscription.expirationDate)}
-                    </p>
-                  </div>
-
-                  <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-2xl">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <CreditCard className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                        Renewal Status
-                      </span>
-                    </div>
-                    <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                      {subscription.willRenew ? 'Auto-renew' : 'Cancelled'}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Account Info */}
-              <div className="p-4 border border-slate-200 dark:border-slate-600 rounded-2xl">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                    Account Email
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Email</span>
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">
+                    {user?.email}
                   </span>
                 </div>
-                <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                  {user?.email || 'Not available'}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="space-y-6"
-          >
-            {/* Upgrade/Manage */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                {isPro ? 'Manage Subscription' : 'Upgrade to Pro'}
-              </h3>
-              
-              {!isPro ? (
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-emerald-600 mb-1">$9</div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400">per month</div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Plan</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-slate-900 dark:text-white">
+                      {isPro ? 'Pro Designer' : 'Free'}
+                    </span>
+                    <ProBadge />
                   </div>
-                  <Link
-                    to="/wizard"
-                    className="block w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-2xl font-medium text-center transition-all duration-200 shadow-lg hover:shadow-xl"
-                  >
-                    Upgrade Now
-                  </Link>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Role</span>
+                  <span className="text-sm font-medium text-slate-900 dark:text-white capitalize">
+                    {profile?.role}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Billing History */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-xl">
+                    <Receipt className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                  </div>
+                  <h3 className="font-semibold text-slate-900 dark:text-white">
+                    Billing History
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowInvoices(!showInvoices)}
+                  className="text-sm text-emerald-600 hover:text-emerald-700 transition-colors"
+                >
+                  {showInvoices ? 'Hide' : 'View All'}
+                </button>
+              </div>
+              
+              {isPro ? (
+                <div className="space-y-3">
+                  {(showInvoices ? invoices : invoices.slice(0, 2)).map((invoice) => (
+                    <div
+                      key={invoice.id}
+                      className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-xl"
+                    >
+                      <div>
+                        <div className="text-sm font-medium text-slate-900 dark:text-white">
+                          ${invoice.amount.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">
+                          {new Date(invoice.date).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">
+                          Paid
+                        </span>
+                        <button
+                          onClick={() => window.open(invoice.downloadUrl, '_blank')}
+                          className="p-1 text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  No billing history available. Upgrade to Pro to see your invoices here.
+                </p>
+              )}
+            </motion.div>
+
+            {/* Payment Methods */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6"
+            >
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-xl">
+                  <CreditCard className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                </div>
+                <h3 className="font-semibold text-slate-900 dark:text-white">
+                  Payment Methods
+                </h3>
+              </div>
+              
+              {isPro ? (
                 <div className="space-y-3">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Manage your subscription through your app store or payment provider.
-                  </p>
-                  <button
-                    onClick={handleRestore}
-                    disabled={loading}
-                    className="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 py-3 rounded-2xl font-medium transition-colors disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <Loader className="h-4 w-4 animate-spin" />
-                        <span>Restoring...</span>
+                  <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-5 bg-gradient-to-r from-blue-600 to-blue-700 rounded text-white text-xs flex items-center justify-center font-bold">
+                        VISA
                       </div>
-                    ) : (
-                      'Restore Purchases'
-                    )}
+                      <div>
+                        <div className="text-sm font-medium text-slate-900 dark:text-white">
+                          •••• •••• •••• 4242
+                        </div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">
+                          Expires 12/25
+                        </div>
+                      </div>
+                    </div>
+                    <button className="text-sm text-emerald-600 hover:text-emerald-700 transition-colors">
+                      Edit
+                    </button>
+                  </div>
+                  
+                  <button className="w-full p-3 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl text-sm text-slate-600 dark:text-slate-400 hover:border-emerald-500 hover:text-emerald-600 transition-colors">
+                    + Add Payment Method
                   </button>
                 </div>
+              ) : (
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  No payment methods on file. Add a payment method when you upgrade to Pro.
+                </p>
               )}
-            </div>
+            </motion.div>
 
             {/* Support */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6"
+            >
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
                 Need Help?
               </h3>
               <div className="space-y-3">
                 <a
-                  href="mailto:support@aquaguardian.green"
+                  href="mailto:billing@aquaguardian.green"
                   className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 transition-colors"
                 >
-                  <span>Contact Support</span>
+                  <span>Contact Billing Support</span>
+                  <ExternalLink className="h-4 w-4" />
                 </a>
                 <a
                   href="/terms"
                   className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                 >
+                  <FileText className="h-4 w-4" />
                   <span>Terms of Service</span>
                 </a>
                 <a
                   href="/privacy"
                   className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                 >
+                  <FileText className="h-4 w-4" />
                   <span>Privacy Policy</span>
                 </a>
               </div>
-            </div>
-
-            {/* Domain Info */}
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-6">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="h-5 w-5 text-emerald-600 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-emerald-800 dark:text-emerald-200 mb-2">
-                    Custom Domain
-                  </h4>
-                  <p className="text-sm text-emerald-700 dark:text-emerald-300 leading-relaxed">
-                    This site is configured to use the custom domain{' '}
-                    <code className="bg-emerald-100 dark:bg-emerald-800 px-1 rounded">
-                      aquaguardian.green
-                    </code>
-                    {' '}via Entri domain mapping.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </div>
     </div>

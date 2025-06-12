@@ -1,6 +1,6 @@
 # AquaGuardian
 
-A comprehensive aquaponic system design and simulation platform with blockchain tokenization capabilities.
+A comprehensive aquaponic system design and simulation platform with blockchain tokenization capabilities and integrated Stripe payments.
 
 ## Features
 
@@ -9,6 +9,13 @@ A comprehensive aquaponic system design and simulation platform with blockchain 
 - **Real-time Simulation**: Advanced performance modeling with yield predictions
 - **Performance Analytics**: 30-day cumulative charts and efficiency metrics
 - **Design Marketplace**: Community sharing and discovery platform
+
+### 💳 Payment Integration
+- **Stripe Checkout**: Secure payment processing with credit cards and digital wallets
+- **Subscription Management**: Automated billing and subscription lifecycle management
+- **Multiple Payment Methods**: Support for cards, Apple Pay, Google Pay, and more
+- **Invoice Management**: Automated invoice generation and payment tracking
+- **Webhook Integration**: Real-time payment status updates and subscription changes
 
 ### 💎 Pro Designer Subscription ($9/month)
 - **Unlimited Simulations**: No restrictions on system designs
@@ -36,8 +43,8 @@ A comprehensive aquaponic system design and simulation platform with blockchain 
 - **Animation**: Framer Motion
 - **Charts**: Recharts for data visualization
 - **Backend**: Supabase (PostgreSQL, Auth, RLS)
+- **Payments**: Stripe (Primary), RevenueCat (Mobile)
 - **Blockchain**: Algorand SDK, AlgoKit Utils (TestNet with inline config)
-- **Payments**: RevenueCat Web SDK
 - **Build**: Vite, ESLint, PostCSS
 
 ## Custom Domain Setup
@@ -69,7 +76,11 @@ Required environment variables for full functionality:
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# RevenueCat Configuration (REQUIRED for subscriptions)
+# Stripe Configuration (REQUIRED for payments)
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+VITE_STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+
+# RevenueCat Configuration (OPTIONAL for mobile subscriptions)
 VITE_REVENUECAT_API_KEY=your_revenuecat_api_key
 
 # ElevenLabs Voice-over (OPTIONAL for video production)
@@ -77,6 +88,56 @@ ELEVEN_API_KEY=your_elevenlabs_api_key
 ```
 
 **Note**: Algorand TestNet configuration is now handled with inline constants in `src/lib/algorand.ts`. No environment variables needed for blockchain features.
+
+## Stripe Payment Setup
+
+### 1. Create Stripe Account
+1. Sign up at [stripe.com](https://stripe.com)
+2. Complete account verification
+3. Get your API keys from the Dashboard
+
+### 2. Configure Products
+Create these products in your Stripe Dashboard:
+
+```json
+{
+  "pro_monthly": {
+    "name": "Pro Designer Monthly",
+    "price": "$9.00",
+    "interval": "month",
+    "trial_period_days": 7
+  },
+  "pro_yearly": {
+    "name": "Pro Designer Yearly", 
+    "price": "$99.00",
+    "interval": "year",
+    "trial_period_days": 7
+  }
+}
+```
+
+### 3. Webhook Configuration
+Set up webhooks in Stripe Dashboard:
+
+**Endpoint URL**: `https://aquaguardian.green/api/stripe/webhook`
+
+**Events to listen for**:
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_succeeded`
+- `invoice.payment_failed`
+- `checkout.session.completed`
+
+### 4. Test Cards
+Use these test cards for development:
+
+```
+Visa: 4242 4242 4242 4242
+Mastercard: 5555 5555 5555 4444
+American Express: 3782 822463 10005
+Declined: 4000 0000 0000 0002
+```
 
 ## Algorand Configuration
 
@@ -159,6 +220,7 @@ The test suite covers:
 - **Wizard Completion**: All 5 steps with validation
 - **Simulation Accuracy**: Yield calculations > 0, realistic values
 - **Tokenization**: Token creation, Algorand integration
+- **Payment Processing**: Stripe checkout and subscription flows
 - **Navigation**: Sidebar, mobile, theme switching
 - **Marketplace**: Search, filters, design cards
 
@@ -178,6 +240,7 @@ Tests automatically flag issues as "MUST-FIX" when:
 - ❌ **Coverage Below 80%**: Unit test coverage drops below threshold
 - ❌ **Simulation Accuracy**: Yield calculations return 0 or invalid values
 - ❌ **Token Creation**: Blockchain integration fails
+- ❌ **Payment Processing**: Stripe integration failures
 - ❌ **Performance**: Lighthouse scores below 90%
 - ❌ **Bundle Size**: Exceeds 5MB limit
 
@@ -371,6 +434,23 @@ The application is optimized for Netlify deployment with:
 - Environment variable management
 - Custom domain support via Entri
 - SSL certificate provisioning
+- Stripe webhook endpoints
+
+### Deployment Checklist
+
+1. **Environment Variables**: Configure all required variables in Netlify
+2. **Stripe Setup**: Create products and configure webhooks
+3. **Domain Configuration**: Set up custom domain with SSL
+4. **Database Migration**: Run Supabase migrations
+5. **Testing**: Verify payment flows and subscription management
+
+## Security Considerations
+
+- **PCI Compliance**: Stripe handles all payment data securely
+- **Environment Variables**: Never commit sensitive keys to version control
+- **Row Level Security**: Database access is properly restricted
+- **HTTPS Only**: All payment flows require SSL encryption
+- **Webhook Validation**: Stripe webhook signatures are verified
 
 ## License
 
@@ -380,5 +460,12 @@ MIT License - see LICENSE file for details.
 
 For technical support or subscription issues:
 - Email: support@aquaguardian.green
+- Billing: billing@aquaguardian.green
 - Documentation: [Coming Soon]
 - Community: [Coming Soon]
+
+---
+
+**Payment Processing**: Powered by Stripe  
+**Blockchain**: Algorand TestNet  
+**Hosting**: Netlify with custom domain
