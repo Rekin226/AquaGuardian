@@ -10,6 +10,7 @@ import { Wizard } from './pages/Wizard';
 import { Marketplace } from './pages/Marketplace';
 import { Settings } from './pages/Settings';
 import { Billing } from './pages/Billing';
+import { Success } from './pages/Success';
 import { Auth } from './pages/Auth';
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ function AuthenticatedApp() {
   return (
     <Routes>
       <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/wizard" replace />} />
+      <Route path="/success" element={<Success />} />
       <Route path="/" element={<Navigate to={user ? "/wizard" : "/auth"} replace />} />
       
       {/* Protected Routes */}

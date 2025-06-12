@@ -1,8 +1,8 @@
 import { loadStripe, Stripe } from '@stripe/stripe-js'
+import { supabase } from './supabase'
 
 // Stripe configuration
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-const STRIPE_SECRET_KEY = import.meta.env.VITE_STRIPE_SECRET_KEY
 
 // Initialize Stripe
 let stripePromise: Promise<Stripe | null>
@@ -16,32 +16,30 @@ if (STRIPE_PUBLISHABLE_KEY) {
 
 export interface StripeProduct {
   id: string
+  priceId: string
   name: string
   description: string
   price: number
   currency: string
-  interval: 'month' | 'year'
+  mode: 'payment' | 'subscription'
   features: string[]
 }
 
-export interface PaymentIntent {
-  id: string
-  amount: number
-  currency: string
+export interface CheckoutSessionResult {
+  success: boolean
+  url?: string
+  sessionId?: string
+  error?: string
+}
+
+export interface SubscriptionData {
   status: string
-  client_secret: string
-}
-
-export interface SubscriptionResult {
-  success: boolean
-  subscription?: any
-  error?: string
-}
-
-export interface PaymentResult {
-  success: boolean
-  paymentIntent?: PaymentIntent
-  error?: string
+  priceId: string | null
+  currentPeriodStart: Date | null
+  currentPeriodEnd: Date | null
+  cancelAtPeriodEnd: boolean
+  paymentMethodBrand: string | null
+  paymentMethodLast4: string | null
 }
 
 export class StripeService {
@@ -71,171 +69,100 @@ export class StripeService {
     }
   }
 
-  async createPaymentIntent(amount: number, currency = 'usd'): Promise<PaymentResult> {
-    if (!this.stripe) {
-      return { success: false, error: 'Stripe not initialized' }
-    }
-
+  async createCheckoutSession(
+    priceId: string,
+    mode: 'payment' | 'subscription',
+    successUrl: string,
+    cancelUrl: string
+  ): Promise<CheckoutSessionResult> {
     try {
-      // Call your backend API to create payment intent
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: amount * 100, // Convert to cents
-          currency,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create payment intent')
+      // Get the current user's session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError || !session?.access_token) {
+        return { success: false, error: 'User not authenticated' }
       }
 
-      const paymentIntent = await response.json()
-      return { success: true, paymentIntent }
-    } catch (error: any) {
-      console.error('Payment intent creation failed:', error)
-      return { success: false, error: error.message || 'Payment intent creation failed' }
-    }
-  }
-
-  async confirmPayment(clientSecret: string, paymentMethod: any): Promise<PaymentResult> {
-    if (!this.stripe) {
-      return { success: false, error: 'Stripe not initialized' }
-    }
-
-    try {
-      const { error, paymentIntent } = await this.stripe.confirmCardPayment(clientSecret, {
-        payment_method: paymentMethod
+      // Call the Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('stripe-checkout', {
+        body: {
+          price_id: priceId,
+          mode,
+          success_url: successUrl,
+          cancel_url: cancelUrl,
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       })
 
       if (error) {
-        return { success: false, error: error.message }
+        console.error('Checkout session creation failed:', error)
+        return { success: false, error: error.message || 'Failed to create checkout session' }
       }
 
-      return { success: true, paymentIntent }
-    } catch (error: any) {
-      console.error('Payment confirmation failed:', error)
-      return { success: false, error: error.message || 'Payment confirmation failed' }
-    }
-  }
-
-  async createSubscription(priceId: string, customerId?: string): Promise<SubscriptionResult> {
-    try {
-      // Call your backend API to create subscription
-      const response = await fetch('/api/create-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          priceId,
-          customerId,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create subscription')
+      return {
+        success: true,
+        url: data.url,
+        sessionId: data.sessionId,
       }
-
-      const subscription = await response.json()
-      return { success: true, subscription }
-    } catch (error: any) {
-      console.error('Subscription creation failed:', error)
-      return { success: false, error: error.message || 'Subscription creation failed' }
-    }
-  }
-
-  async cancelSubscription(subscriptionId: string): Promise<SubscriptionResult> {
-    try {
-      // Call your backend API to cancel subscription
-      const response = await fetch('/api/cancel-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          subscriptionId,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to cancel subscription')
-      }
-
-      const subscription = await response.json()
-      return { success: true, subscription }
-    } catch (error: any) {
-      console.error('Subscription cancellation failed:', error)
-      return { success: false, error: error.message || 'Subscription cancellation failed' }
-    }
-  }
-
-  async getProducts(): Promise<StripeProduct[]> {
-    // Return predefined products for AquaGuardian
-    return [
-      {
-        id: 'price_1234567890', // Use actual Stripe price ID
-        name: 'Pro Designer Monthly',
-        description: 'Unlimited simulations, advanced analytics, and premium features',
-        price: 9,
-        currency: 'usd',
-        interval: 'month',
-        features: [
-          'Unlimited system simulations',
-          'Advanced performance analytics',
-          'Unlimited token minting',
-          'Priority customer support',
-          'Detailed PDF exports',
-          'Commercial usage rights'
-        ]
-      },
-      {
-        id: 'price_0987654321', // Use actual Stripe price ID
-        name: 'Pro Designer Yearly',
-        description: 'Annual subscription with 2 months free',
-        price: 99,
-        currency: 'usd',
-        interval: 'year',
-        features: [
-          'All Pro Monthly features',
-          '2 months free (save $18)',
-          'Priority feature requests',
-          'Dedicated account manager',
-          'Custom integrations',
-          'White-label options'
-        ]
-      }
-    ]
-  }
-
-  async createCheckoutSession(priceId: string, successUrl: string, cancelUrl: string): Promise<{ success: boolean; url?: string; error?: string }> {
-    try {
-      // Call your backend API to create Stripe Checkout session
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          priceId,
-          successUrl,
-          cancelUrl,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create checkout session')
-      }
-
-      const { url } = await response.json()
-      return { success: true, url }
     } catch (error: any) {
       console.error('Checkout session creation failed:', error)
-      return { success: false, error: error.message || 'Checkout session creation failed' }
+      return { success: false, error: error.message || 'Failed to create checkout session' }
+    }
+  }
+
+  async getUserSubscription(): Promise<SubscriptionData | null> {
+    try {
+      const { data, error } = await supabase
+        .from('stripe_user_subscriptions')
+        .select('*')
+        .maybeSingle()
+
+      if (error) {
+        console.error('Failed to fetch subscription:', error)
+        return null
+      }
+
+      if (!data) {
+        return null
+      }
+
+      return {
+        status: data.subscription_status || 'not_started',
+        priceId: data.price_id,
+        currentPeriodStart: data.current_period_start 
+          ? new Date(data.current_period_start * 1000) 
+          : null,
+        currentPeriodEnd: data.current_period_end 
+          ? new Date(data.current_period_end * 1000) 
+          : null,
+        cancelAtPeriodEnd: data.cancel_at_period_end || false,
+        paymentMethodBrand: data.payment_method_brand,
+        paymentMethodLast4: data.payment_method_last4,
+      }
+    } catch (error) {
+      console.error('Failed to fetch subscription:', error)
+      return null
+    }
+  }
+
+  async getUserOrders() {
+    try {
+      const { data, error } = await supabase
+        .from('stripe_user_orders')
+        .select('*')
+        .order('order_date', { ascending: false })
+
+      if (error) {
+        console.error('Failed to fetch orders:', error)
+        return []
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('Failed to fetch orders:', error)
+      return []
     }
   }
 

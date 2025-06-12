@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { stripe, StripeProduct } from '../lib/stripe'
+import { stripe } from '../lib/stripe'
 import { useAuth } from '../lib/auth'
 import { useSubscription } from '../lib/subscription'
+import { STRIPE_PRODUCTS, StripeProduct } from '../stripe-config'
 import { 
   CreditCard, 
   Shield, 
@@ -10,7 +11,6 @@ import {
   Crown, 
   Loader,
   AlertCircle,
-  ExternalLink,
   Lock
 } from 'lucide-react'
 
@@ -25,13 +25,11 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
   const { refreshSubscription } = useSubscription()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [products, setProducts] = useState<StripeProduct[]>([])
-  const [selectedProduct, setSelectedProduct] = useState<StripeProduct | null>(product || null)
+  const [selectedProduct, setSelectedProduct] = useState<StripeProduct | null>(product || STRIPE_PRODUCTS[0])
 
   useEffect(() => {
     if (isOpen) {
       initializeStripe()
-      loadProducts()
     }
   }, [isOpen])
 
@@ -41,19 +39,6 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
     } catch (error) {
       console.error('Failed to initialize Stripe:', error)
       setError('Payment system unavailable. Please try again later.')
-    }
-  }
-
-  const loadProducts = async () => {
-    try {
-      const availableProducts = await stripe.getProducts()
-      setProducts(availableProducts)
-      
-      if (!selectedProduct && availableProducts.length > 0) {
-        setSelectedProduct(availableProducts[0])
-      }
-    } catch (error) {
-      console.error('Failed to load products:', error)
     }
   }
 
@@ -68,7 +53,8 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
       const cancelUrl = `${window.location.origin}/account/billing?canceled=true`
 
       const result = await stripe.createCheckoutSession(
-        selectedProduct.id,
+        selectedProduct.priceId,
+        selectedProduct.mode,
         successUrl,
         cancelUrl
       )
@@ -81,30 +67,6 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
       }
     } catch (error: any) {
       setError(error.message || 'Checkout failed')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDirectPayment = async () => {
-    if (!selectedProduct || !user) return
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      // Create payment intent
-      const paymentResult = await stripe.createPaymentIntent(selectedProduct.price)
-      
-      if (paymentResult.success) {
-        // In a real implementation, you would collect payment method details
-        // and confirm the payment. For now, redirect to checkout
-        await handleCheckout()
-      } else {
-        setError(paymentResult.error || 'Payment failed')
-      }
-    } catch (error: any) {
-      setError(error.message || 'Payment processing failed')
     } finally {
       setLoading(false)
     }
@@ -139,9 +101,9 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
               <Crown className="h-8 w-8" />
             </motion.div>
             
-            <h2 className="text-3xl font-bold mb-2">Upgrade to Pro Designer</h2>
+            <h2 className="text-3xl font-bold mb-2">Subscribe to {selectedProduct?.name}</h2>
             <p className="text-emerald-100">
-              Unlock unlimited simulations and premium features
+              {selectedProduct?.description}
             </p>
           </div>
         </div>
@@ -149,13 +111,13 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
         {/* Content */}
         <div className="p-8">
           {/* Product Selection */}
-          {products.length > 1 && (
+          {STRIPE_PRODUCTS.length > 1 && (
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
                 Choose Your Plan
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {products.map((prod) => (
+                {STRIPE_PRODUCTS.map((prod) => (
                   <button
                     key={prod.id}
                     onClick={() => setSelectedProduct(prod)}
@@ -169,9 +131,9 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
                       <h4 className="font-semibold text-slate-900 dark:text-white">
                         {prod.name}
                       </h4>
-                      {prod.interval === 'year' && (
+                      {prod.mode === 'subscription' && (
                         <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full text-xs font-medium">
-                          Save 18%
+                          Monthly
                         </span>
                       )}
                     </div>
@@ -179,7 +141,7 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
                       ${prod.price}
                     </div>
                     <div className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                      per {prod.interval}
+                      {prod.mode === 'subscription' ? 'per month' : 'one-time'}
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-400">
                       {prod.description}
@@ -237,12 +199,12 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
               {loading ? (
                 <div className="flex items-center justify-center space-x-2">
                   <Loader className="h-5 w-5 animate-spin" />
-                  <span>Processing...</span>
+                  <span>Redirecting to Stripe...</span>
                 </div>
               ) : (
                 <div className="flex items-center justify-center space-x-2">
                   <CreditCard className="h-5 w-5" />
-                  <span>Subscribe with Stripe</span>
+                  <span>Subscribe for ${selectedProduct?.price}/month</span>
                 </div>
               )}
             </motion.button>

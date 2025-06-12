@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './auth'
-import { revenuecat, Subscription } from './revenuecat'
+import { stripe, SubscriptionData } from './stripe'
+import { getProductByPriceId } from '../stripe-config'
 
 interface SubscriptionContextType {
-  subscription: Subscription
+  subscription: SubscriptionData | null
   loading: boolean
   isPro: boolean
+  isActive: boolean
+  productName: string | null
   refreshSubscription: () => Promise<void>
 }
 
@@ -13,27 +16,21 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
-  const [subscription, setSubscription] = useState<Subscription>({
-    isActive: false,
-    productId: null,
-    expirationDate: null,
-    willRenew: false
-  })
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (user) {
       initializeSubscription()
     } else {
+      setSubscription(null)
       setLoading(false)
     }
   }, [user])
 
   const initializeSubscription = async () => {
-    if (!user) return
-
     try {
-      await revenuecat.initialize(user.id)
+      await stripe.initialize()
       await refreshSubscription()
     } catch (error) {
       console.error('Failed to initialize subscription:', error)
@@ -44,19 +41,28 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const refreshSubscription = async () => {
     try {
-      const status = await revenuecat.getSubscriptionStatus()
-      setSubscription(status)
+      const subscriptionData = await stripe.getUserSubscription()
+      setSubscription(subscriptionData)
     } catch (error) {
       console.error('Failed to refresh subscription:', error)
     }
   }
 
-  const isPro = subscription.isActive
+  // Determine if user has an active subscription
+  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing'
+  const isPro = isActive
+
+  // Get product name from subscription
+  const productName = subscription?.priceId 
+    ? getProductByPriceId(subscription.priceId)?.name || null
+    : null
 
   const value = {
     subscription,
     loading,
     isPro,
+    isActive,
+    productName,
     refreshSubscription
   }
 

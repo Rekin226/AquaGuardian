@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { stripe, StripeProduct } from '../lib/stripe'
 import { useAuth } from '../lib/auth'
 import { useSubscription } from '../lib/subscription'
 import { StripeCheckout } from './StripeCheckout'
+import { STRIPE_PRODUCTS } from '../stripe-config'
 import { 
   Crown, 
   CreditCard, 
@@ -19,24 +19,10 @@ import {
 
 export function SubscriptionManager() {
   const { user } = useAuth()
-  const { subscription, isPro, refreshSubscription } = useSubscription()
+  const { subscription, isPro, isActive, productName, refreshSubscription } = useSubscription()
   const [showCheckout, setShowCheckout] = useState(false)
-  const [products, setProducts] = useState<StripeProduct[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    loadProducts()
-  }, [])
-
-  const loadProducts = async () => {
-    try {
-      const availableProducts = await stripe.getProducts()
-      setProducts(availableProducts)
-    } catch (error) {
-      console.error('Failed to load products:', error)
-    }
-  }
 
   const handleRefreshSubscription = async () => {
     setLoading(true)
@@ -51,29 +37,6 @@ export function SubscriptionManager() {
     }
   }
 
-  const handleCancelSubscription = async () => {
-    if (!confirm('Are you sure you want to cancel your subscription? You will lose access to Pro features at the end of your billing period.')) {
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      // In a real implementation, this would call your backend to cancel the subscription
-      console.log('Cancelling subscription...')
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      await refreshSubscription()
-    } catch (error: any) {
-      setError(error.message || 'Failed to cancel subscription')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const formatDate = (date: Date | null) => {
     if (!date) return 'N/A'
     return new Intl.DateTimeFormat('en-US', {
@@ -81,6 +44,36 @@ export function SubscriptionManager() {
       month: 'long',
       day: 'numeric'
     }).format(date)
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+      case 'trialing':
+        return 'text-emerald-600'
+      case 'past_due':
+        return 'text-amber-600'
+      case 'canceled':
+      case 'unpaid':
+        return 'text-red-600'
+      default:
+        return 'text-slate-600'
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'active':
+      case 'trialing':
+        return <CheckCircle className="h-4 w-4 text-emerald-600" />
+      case 'past_due':
+        return <AlertTriangle className="h-4 w-4 text-amber-600" />
+      case 'canceled':
+      case 'unpaid':
+        return <XCircle className="h-4 w-4 text-red-600" />
+      default:
+        return <XCircle className="h-4 w-4 text-slate-600" />
+    }
   }
 
   return (
@@ -98,7 +91,7 @@ export function SubscriptionManager() {
             </div>
             <div>
               <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-                {isPro ? 'Pro Designer' : 'Free Plan'}
+                {productName || (isPro ? 'Active Subscription' : 'Free Plan')}
               </h2>
               <p className="text-slate-600 dark:text-slate-400">
                 {isPro ? 'All premium features unlocked' : 'Limited features available'}
@@ -116,7 +109,7 @@ export function SubscriptionManager() {
         </div>
 
         {/* Subscription Details */}
-        {isPro ? (
+        {subscription && isActive ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
@@ -127,7 +120,7 @@ export function SubscriptionManager() {
                   </span>
                 </div>
                 <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                  {formatDate(subscription.expirationDate)}
+                  {formatDate(subscription.currentPeriodEnd)}
                 </p>
               </div>
 
@@ -139,8 +132,10 @@ export function SubscriptionManager() {
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-emerald-600" />
-                  <span className="text-lg font-semibold text-emerald-600">Active</span>
+                  {getStatusIcon(subscription.status)}
+                  <span className={`text-lg font-semibold capitalize ${getStatusColor(subscription.status)}`}>
+                    {subscription.status.replace('_', ' ')}
+                  </span>
                 </div>
               </div>
 
@@ -148,11 +143,14 @@ export function SubscriptionManager() {
                 <div className="flex items-center space-x-2 mb-2">
                   <DollarSign className="h-4 w-4 text-slate-500" />
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                    Plan
+                    Payment Method
                   </span>
                 </div>
                 <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                  ${subscription.productId === 'pro_yearly' ? '99/year' : '9/month'}
+                  {subscription.paymentMethodBrand && subscription.paymentMethodLast4
+                    ? `${subscription.paymentMethodBrand.toUpperCase()} •••• ${subscription.paymentMethodLast4}`
+                    : 'Not available'
+                  }
                 </p>
               </div>
             </div>
@@ -167,29 +165,35 @@ export function SubscriptionManager() {
                 <span>Manage Billing</span>
               </button>
               
-              <button
-                onClick={handleCancelSubscription}
-                disabled={loading}
-                className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors disabled:opacity-50"
-              >
-                <XCircle className="h-4 w-4" />
-                <span>Cancel Subscription</span>
-              </button>
+              {subscription.cancelAtPeriodEnd ? (
+                <div className="flex items-center space-x-2 px-4 py-2 text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>Cancels at period end</span>
+                </div>
+              ) : (
+                <button
+                  disabled={loading}
+                  className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  <XCircle className="h-4 w-4" />
+                  <span>Cancel Subscription</span>
+                </button>
+              )}
             </div>
           </div>
         ) : (
           <div className="text-center py-8">
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                Upgrade to Pro Designer
+                Subscribe to {STRIPE_PRODUCTS[0]?.name}
               </h3>
               <p className="text-slate-600 dark:text-slate-400">
-                Unlock unlimited simulations, advanced analytics, and premium features
+                {STRIPE_PRODUCTS[0]?.description}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {products.map((product) => (
+              {STRIPE_PRODUCTS.map((product) => (
                 <div
                   key={product.id}
                   className="p-4 border border-slate-200 dark:border-slate-600 rounded-xl hover:border-emerald-500 transition-colors"
@@ -199,7 +203,7 @@ export function SubscriptionManager() {
                       ${product.price}
                     </div>
                     <div className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                      per {product.interval}
+                      {product.mode === 'subscription' ? 'per month' : 'one-time'}
                     </div>
                     <h4 className="font-semibold text-slate-900 dark:text-white mb-2">
                       {product.name}
@@ -230,20 +234,11 @@ export function SubscriptionManager() {
         className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6"
       >
         <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">
-          Pro Designer Features
+          {STRIPE_PRODUCTS[0]?.name} Features
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            'Unlimited system simulations',
-            'Advanced performance analytics',
-            'Unlimited token minting',
-            'Priority customer support',
-            'Detailed PDF exports',
-            'Commercial usage rights',
-            'Custom integrations',
-            'White-label options'
-          ].map((feature, index) => (
+          {STRIPE_PRODUCTS[0]?.features.map((feature, index) => (
             <motion.div
               key={feature}
               initial={{ opacity: 0, x: -20 }}
@@ -256,7 +251,7 @@ export function SubscriptionManager() {
                 {feature}
               </span>
             </motion.div>
-          ))}
+          )) || []}
         </div>
       </motion.div>
 
