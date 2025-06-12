@@ -1,0 +1,36 @@
+{
+  "submission_complete": false,
+  "completion_percentage": 0,
+  "completed_checks": 0,
+  "total_checks": 16,
+  "sections": {
+    "inspiration_problem": false,
+    "what_it_does": false,
+    "tech_stack_architecture": false,
+    "algorand_challenge_fit": false,
+    "screenshots_embedded": false
+  },
+  "technical_requirements": {
+    "mermaid_diagrams": false,
+    "external_links_validated": false,
+    "screenshots_exist": false,
+    "submission_md_exists": true
+  },
+  "algorand_integration": {
+    "blockchain_features_described": false,
+    "sustainability_impact": false,
+    "financial_inclusion": false,
+    "technical_innovation": false
+  },
+  "deployment": {
+    "live_demo_accessible": false,
+    "github_repo_public": false,
+    "video_demo_available": false,
+    "documentation_complete": false
+  },
+  "generated_at": "2025-01-11T16:31:08.000Z",
+  "validation_results": {
+    "links": {},
+    "screenshots": {}
+  }
+}

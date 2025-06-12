@@ -211,6 +211,56 @@ ffmpeg -y [same inputs] -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p demo-
 | 6 | 135-165s | Pro Subscription | Premium features |
 | 7 | 165-180s | Call to Action | Website and signup |
 
+## Devpost Submission
+
+### 📋 Submission Validation
+
+Validate your Devpost submission with automated checks:
+
+```bash
+# Run comprehensive submission validation
+npm run validate:submission
+
+# Prepare complete Devpost bundle
+npm run prepare:devpost
+```
+
+The validation script checks:
+- ✅ All required sections in SUBMISSION.md
+- 🔗 External link accessibility
+- 📸 Screenshot availability
+- 📊 Mermaid diagram inclusion
+- 🏆 Algorand integration completeness
+
+### 📊 Submission Checklist
+
+The system generates `submission_checklist.json` with boolean flags for:
+
+**Sections**
+- Inspiration / Problem statement
+- What it does description
+- Tech stack & architecture
+- Algorand challenge fit
+- Screenshots embedded
+
+**Technical Requirements**
+- Mermaid diagrams included
+- External links validated
+- Screenshots exist
+- SUBMISSION.md complete
+
+**Algorand Integration**
+- Blockchain features described
+- Sustainability impact explained
+- Financial inclusion addressed
+- Technical innovation highlighted
+
+**Deployment**
+- Live demo accessible
+- GitHub repository public
+- Video demo available
+- Documentation complete
+
 ## Deployment
 
 The application is optimized for Netlify deployment with:

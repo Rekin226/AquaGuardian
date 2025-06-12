@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest",
     "build:video": "node scripts/build-video.js",
-    "storyboard": "open public/storyboard.html"
+    "storyboard": "open public/storyboard.html",
+    "validate:submission": "node scripts/validate-submission.js",
+    "prepare:devpost": "npm run validate:submission && echo 'Submission validation complete!'"
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "^9.1.0",
