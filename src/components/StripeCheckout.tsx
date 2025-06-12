@@ -98,20 +98,8 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
       
       if (paymentResult.success) {
         // In a real implementation, you would collect payment method details
-        // and confirm the payment. For demo purposes, we'll simulate success.
-        
-        // Simulate payment processing delay
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        
-        // Create subscription
-        const subscriptionResult = await stripe.createSubscription(selectedProduct.id, user.id)
-        
-        if (subscriptionResult.success) {
-          await refreshSubscription()
-          onClose()
-        } else {
-          setError(subscriptionResult.error || 'Subscription creation failed')
-        }
+        // and confirm the payment. For now, redirect to checkout
+        await handleCheckout()
       } else {
         setError(paymentResult.error || 'Payment failed')
       }
@@ -225,51 +213,6 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
             </div>
           )}
 
-          {/* Payment Methods */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-              Payment Options
-            </h3>
-            <div className="space-y-3">
-              <button
-                onClick={handleCheckout}
-                disabled={loading || !selectedProduct}
-                className="w-full flex items-center justify-between p-4 border border-slate-200 dark:border-slate-600 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-              >
-                <div className="flex items-center space-x-3">
-                  <CreditCard className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                  <div className="text-left">
-                    <div className="font-medium text-slate-900 dark:text-white">
-                      Stripe Checkout
-                    </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400">
-                      Secure payment with credit card or digital wallet
-                    </div>
-                  </div>
-                </div>
-                <ExternalLink className="h-4 w-4 text-slate-400" />
-              </button>
-
-              <button
-                onClick={handleDirectPayment}
-                disabled={loading || !selectedProduct}
-                className="w-full flex items-center justify-between p-4 border border-slate-200 dark:border-slate-600 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-              >
-                <div className="flex items-center space-x-3">
-                  <Lock className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                  <div className="text-left">
-                    <div className="font-medium text-slate-900 dark:text-white">
-                      Direct Payment
-                    </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400">
-                      Pay directly within the app (Demo)
-                    </div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
           {/* Error Message */}
           {error && (
             <motion.div
@@ -281,6 +224,29 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
               <p className="text-red-700 dark:text-red-300">{error}</p>
             </motion.div>
           )}
+
+          {/* Checkout Button */}
+          <div className="mb-8">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleCheckout}
+              disabled={loading || !selectedProduct}
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-slate-400 disabled:to-slate-500 text-white py-4 rounded-2xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <Loader className="h-5 w-5 animate-spin" />
+                  <span>Processing...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center space-x-2">
+                  <CreditCard className="h-5 w-5" />
+                  <span>Subscribe with Stripe</span>
+                </div>
+              )}
+            </motion.button>
+          </div>
 
           {/* Security & Trust */}
           <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
@@ -311,7 +277,7 @@ export function StripeCheckout({ isOpen, onClose, product }: StripeCheckoutProps
           <div className="absolute inset-0 bg-white/80 dark:bg-slate-800/80 flex items-center justify-center">
             <div className="text-center">
               <Loader className="h-8 w-8 animate-spin text-emerald-600 mx-auto mb-4" />
-              <p className="text-slate-600 dark:text-slate-400">Processing payment...</p>
+              <p className="text-slate-600 dark:text-slate-400">Redirecting to Stripe...</p>
             </div>
           </div>
         )}
