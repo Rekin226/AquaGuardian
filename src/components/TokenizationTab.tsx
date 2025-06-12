@@ -642,13 +642,6 @@ export function TokenizationTab({ design, simulation }: TokenizationTabProps) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const calculateTokenValue = () => {
-    // Simple valuation based on projected yields and efficiency
-    const annualValue = (simulation.fishYieldKg * 8) + (simulation.vegYieldKg * 5) // $8/kg fish, $5/kg veg
-    const efficiencyMultiplier = simulation.systemEfficiency / 100
-    return Math.round(annualValue * efficiencyMultiplier)
-  }
-
   const handleShare = () => {
     setShowShareModal(true)
   }
@@ -682,6 +675,29 @@ export function TokenizationTab({ design, simulation }: TokenizationTabProps) {
     } catch (error) {
       console.error('Error saving configuration:', error)
     }
+  }
+
+  const handleViewToken = (token: Token) => {
+    if (token.algorand_tx) {
+      // Determine the correct explorer URL based on network
+      const isMainnet = import.meta.env.VITE_ALGORAND_NETWORK === 'mainnet'
+      const explorerUrl = isMainnet 
+        ? `https://algoexplorer.io/tx/${token.algorand_tx}`
+        : `https://testnet.algoexplorer.io/tx/${token.algorand_tx}`
+      
+      // Open in new tab
+      window.open(explorerUrl, '_blank', 'noopener,noreferrer')
+    } else {
+      // If no transaction ID, show token details in a modal or alert
+      alert(`Token #${token.id.slice(-8)} created on ${new Date(token.created_at).toLocaleDateString()}`)
+    }
+  }
+
+  const calculateTokenValue = () => {
+    // Simple valuation based on projected yields and efficiency
+    const annualValue = (simulation.fishYieldKg * 8) + (simulation.vegYieldKg * 5) // $8/kg fish, $5/kg veg
+    const efficiencyMultiplier = simulation.systemEfficiency / 100
+    return Math.round(annualValue * efficiencyMultiplier)
   }
 
   const tokenValue = calculateTokenValue()
@@ -851,7 +867,10 @@ export function TokenizationTab({ design, simulation }: TokenizationTabProps) {
                         <span>TX ID</span>
                       </button>
                     )}
-                    <button className="flex items-center space-x-1 px-3 py-2 text-sm text-emerald-600 hover:text-emerald-700 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                    <button 
+                      onClick={() => handleViewToken(token)}
+                      className="flex items-center space-x-1 px-3 py-2 text-sm text-emerald-600 hover:text-emerald-700 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                    >
                       <ExternalLink className="h-4 w-4" />
                       <span>View</span>
                     </button>
