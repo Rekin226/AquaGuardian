@@ -7,6 +7,7 @@ import { SubscriptionProvider } from './lib/subscription';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Wizard } from './pages/Wizard';
+import { MyDesignsPage } from './pages/MyDesignsPage';
 import { Marketplace } from './pages/Marketplace';
 import { Settings } from './pages/Settings';
 import { Billing } from './pages/Billing';
@@ -38,6 +39,7 @@ function AuthenticatedApp() {
           <Layout>
             <Routes>
               <Route path="/wizard" element={<Wizard />} />
+              <Route path="/designs" element={<MyDesignsPage />} />
               <Route path="/dashboard/:id" element={<Dashboard />} />
               <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/settings" element={<Settings />} />
