@@ -1,5 +1,11 @@
 export interface WizardParams {
   systemType?: string
+  mode?: 'quick' | 'custom'
+  tankVol?: number
+  bioFilterVol?: number
+  purifierVol?: number
+  sumpVol?: number
+  pipeDia?: number
   farmSize: string
   fishSpecies: string[]
   cropChoice: string[]
@@ -36,6 +42,89 @@ const SYSTEM_WATER_USAGE = {
   'media-bed': 1.0,    // Baseline water usage
   'nft': 0.8,          // 20% less water usage
   'dwc': 0.9           // 10% less water usage
+}
+
+// System presets with all volume parameters
+export const SYSTEM_PRESETS = {
+  'media-bed': {
+    tankVol: 300,
+    bioFilterVol: 50,
+    purifierVol: 30,
+    sumpVol: 100,
+    pipeDia: 25
+  },
+  'nft': {
+    tankVol: 400,
+    bioFilterVol: 80,
+    purifierVol: 50,
+    sumpVol: 150,
+    pipeDia: 32
+  },
+  'dwc': {
+    tankVol: 250,
+    bioFilterVol: 60,
+    purifierVol: 40,
+    sumpVol: 120,
+    pipeDia: 20
+  }
+}
+
+// Validation rules
+export const VALIDATION_RULES = {
+  tankVol: { min: 100, max: 2000 },
+  bioFilterVol: { min: 20, max: 500 },
+  purifierVol: { min: 10, max: 300 },
+  sumpVol: { min: 50, max: 800 },
+  pipeDia: { min: 15, max: 50 }
+}
+
+export function validateSystemParams(params: WizardParams): { isValid: boolean; errors: string[] } {
+  const errors: string[] = []
+  
+  if (params.mode === 'custom') {
+    // Tank volume validation
+    if (!params.tankVol || params.tankVol < VALIDATION_RULES.tankVol.min || params.tankVol > VALIDATION_RULES.tankVol.max) {
+      errors.push(`Tank volume must be between ${VALIDATION_RULES.tankVol.min}-${VALIDATION_RULES.tankVol.max}L`)
+    }
+    
+    // Bio-filter volume validation
+    if (!params.bioFilterVol || params.bioFilterVol < VALIDATION_RULES.bioFilterVol.min || params.bioFilterVol > VALIDATION_RULES.bioFilterVol.max) {
+      errors.push(`Bio-filter volume must be between ${VALIDATION_RULES.bioFilterVol.min}-${VALIDATION_RULES.bioFilterVol.max}L`)
+    }
+    
+    // Purifier volume validation
+    if (!params.purifierVol || params.purifierVol < VALIDATION_RULES.purifierVol.min || params.purifierVol > VALIDATION_RULES.purifierVol.max) {
+      errors.push(`Purifier volume must be between ${VALIDATION_RULES.purifierVol.min}-${VALIDATION_RULES.purifierVol.max}L`)
+    }
+    
+    // Sump volume validation
+    if (!params.sumpVol || params.sumpVol < VALIDATION_RULES.sumpVol.min || params.sumpVol > VALIDATION_RULES.sumpVol.max) {
+      errors.push(`Sump volume must be between ${VALIDATION_RULES.sumpVol.min}-${VALIDATION_RULES.sumpVol.max}L`)
+    }
+    
+    // Pipe diameter validation
+    if (!params.pipeDia || params.pipeDia < VALIDATION_RULES.pipeDia.min || params.pipeDia > VALIDATION_RULES.pipeDia.max) {
+      errors.push(`Pipe diameter must be between ${VALIDATION_RULES.pipeDia.min}-${VALIDATION_RULES.pipeDia.max}mm`)
+    }
+    
+    // Relationship validations
+    if (params.tankVol && params.bioFilterVol && params.bioFilterVol > params.tankVol * 0.5) {
+      errors.push('Bio-filter volume should not exceed 50% of tank volume')
+    }
+    
+    if (params.tankVol && params.purifierVol && params.purifierVol > params.tankVol * 0.3) {
+      errors.push('Purifier volume should not exceed 30% of tank volume')
+    }
+    
+    if (params.tankVol && params.sumpVol && params.sumpVol > params.tankVol * 0.8) {
+      errors.push('Sump volume should not exceed 80% of tank volume')
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  }
 }
 
 // Fish yield per species (kg per year per unit area)

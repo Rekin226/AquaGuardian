@@ -1,71 +1,60 @@
-<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
-  <rect width="300" height="200" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" rx="8"/>
+  <rect width="300" height="200" fill="#f8fafc"/>
   
   <!-- Fish Tank -->
-  <rect x="20" y="120" width="80" height="60" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="4"/>
-  <text x="60" y="155" text-anchor="middle" font-size="10" fill="white" font-weight="bold">Fish Tank</text>
+  <rect x="20" y="120" width="80" height="60" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2" rx="8"/>
+  <text x="60" y="145" text-anchor="middle" font-size="10" fill="white">Fish Tank</text>
   
   <!-- Fish -->
-  <ellipse cx="45" cy="140" rx="8" ry="4" fill="#fbbf24"/>
-  <ellipse cx="75" cy="150" rx="8" ry="4" fill="#fbbf24"/>
+  <ellipse cx="45" cy="155" rx="8" ry="4" fill="#fbbf24"/>
+  <ellipse cx="75" cy="160" rx="8" ry="4" fill="#fbbf24"/>
   
-  <!-- Pump -->
-  <circle cx="120" cy="150" r="12" fill="#10b981" stroke="#059669" stroke-width="2"/>
-  <text x="120" y="155" text-anchor="middle" font-size="8" fill="white" font-weight="bold">P</text>
+  <!-- Media Bed -->
+  <rect x="150" y="40" width="120" height="80" fill="#84cc16" stroke="#65a30d" stroke-width="2" rx="8"/>
+  <text x="210" y="75" text-anchor="middle" font-size="10" fill="white">Media Bed</text>
   
-  <!-- Pipes from tank to grow bed -->
-  <line x1="100" y1="140" x2="140" y2="140" stroke="#6b7280" stroke-width="3"/>
-  <line x1="140" y1="140" x2="140" y2="80" stroke="#6b7280" stroke-width="3"/>
-  <line x1="140" y1="80" x2="180" y2="80" stroke="#6b7280" stroke-width="3"/>
-  
-  <!-- Grow Bed (Media Bed) -->
-  <rect x="180" y="60" width="100" height="40" fill="#8b5cf6" stroke="#7c3aed" stroke-width="2" rx="4"/>
-  <text x="230" y="85" text-anchor="middle" font-size="10" fill="white" font-weight="bold">Media Bed</text>
-  
-  <!-- Growing Media -->
-  <circle cx="195" cy="75" r="3" fill="#dc2626"/>
-  <circle cx="205" cy="75" r="3" fill="#dc2626"/>
-  <circle cx="215" cy="75" r="3" fill="#dc2626"/>
-  <circle cx="225" cy="75" r="3" fill="#dc2626"/>
-  <circle cx="235" cy="75" r="3" fill="#dc2626"/>
-  <circle cx="245" cy="75" r="3" fill="#dc2626"/>
-  <circle cx="255" cy="75" r="3" fill="#dc2626"/>
-  <circle cx="265" cy="75" r="3" fill="#dc2626"/>
+  <!-- Growing Medium (dots) -->
+  <circle cx="170" cy="90" r="3" fill="#22c55e"/>
+  <circle cx="190" cy="85" r="3" fill="#22c55e"/>
+  <circle cx="210" cy="95" r="3" fill="#22c55e"/>
+  <circle cx="230" cy="90" r="3" fill="#22c55e"/>
+  <circle cx="250" cy="85" r="3" fill="#22c55e"/>
   
   <!-- Plants -->
-  <g transform="translate(190,45)">
-    <line x1="0" y1="15" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="4" ry="2" fill="#22c55e"/>
+  <g stroke="#16a34a" stroke-width="2" fill="none">
+    <path d="M170 40 L170 50 M165 45 L175 45"/>
+    <path d="M190 40 L190 50 M185 45 L195 45"/>
+    <path d="M210 40 L210 50 M205 45 L215 45"/>
+    <path d="M230 40 L230 50 M225 45 L235 45"/>
+    <path d="M250 40 L250 50 M245 45 L255 45"/>
   </g>
-  <g transform="translate(210,45)">
-    <line x1="0" y1="15" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="4" ry="2" fill="#22c55e"/>
-  </g>
-  <g transform="translate(230,45)">
-    <line x1="0" y1="15" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="4" ry="2" fill="#22c55e"/>
-  </g>
-  <g transform="translate(250,45)">
-    <line x1="0" y1="15" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="4" ry="2" fill="#22c55e"/>
-  </g>
-  <g transform="translate(270,45)">
-    <line x1="0" y1="15" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="4" ry="2" fill="#22c55e"/>
-  </g>
+  
+  <!-- Pump -->
+  <circle cx="120" cy="150" r="15" fill="#10b981" stroke="#059669" stroke-width="2"/>
+  <text x="120" y="155" text-anchor="middle" font-size="8" fill="white">Pump</text>
+  
+  <!-- Pipes -->
+  <line x1="100" y1="150" x2="135" y2="150" stroke="#6b7280" stroke-width="4"/>
+  <line x1="135" y1="150" x2="150" y2="120" stroke="#6b7280" stroke-width="4"/>
+  <line x1="150" y1="120" x2="150" y2="40" stroke="#6b7280" stroke-width="4"/>
   
   <!-- Return pipe -->
-  <line x1="180" y1="90" x2="140" y2="90" stroke="#6b7280" stroke-width="3"/>
-  <line x1="140" y1="90" x2="140" y2="160" stroke="#6b7280" stroke-width="3"/>
-  <line x1="140" y1="160" x2="100" y2="160" stroke="#6b7280" stroke-width="3"/>
+  <line x1="270" y1="120" x2="270" y2="180" stroke="#6b7280" stroke-width="4"/>
+  <line x1="270" y1="180" x2="100" y2="180" stroke="#6b7280" stroke-width="4"/>
+  <line x1="100" y1="180" x2="100" y2="150" stroke="#6b7280" stroke-width="4"/>
   
   <!-- Flow arrows -->
-  <polygon points="125,137 135,140 125,143" fill="#059669"/>
-  <polygon points="137,85 140,75 143,85" fill="#059669"/>
-  <polygon points="165,77 175,80 165,83" fill="#059669"/>
-  <polygon points="125,163 135,160 125,157" fill="#059669"/>
+  <polygon points="140,145 150,150 140,155" fill="#ef4444"/>
+  <polygon points="155,115 150,105 145,115" fill="#ef4444"/>
+  <polygon points="275,175 270,185 265,175" fill="#ef4444"/>
+  <polygon points="105,175 95,180 105,185" fill="#ef4444"/>
   
-  <!-- Title -->
-  <text x="150" y="25" text-anchor="middle" font-size="14" fill="#1f2937" font-weight="bold">Media Bed System</text>
+  <!-- Bio-filter placeholder (will be overlaid) -->
+  <rect x="150" y="80" width="40" height="30" fill="none" stroke="#4ade80" stroke-width="1" stroke-dasharray="3,3" rx="4"/>
+  <text x="170" y="98" text-anchor="middle" font-size="6" fill="#16a34a">Bio-Filter</text>
+  
+  <!-- Purifier placeholder (will be overlaid) -->
+  <rect x="220" y="85" width="30" height="25" fill="none" stroke="#06b6d4" stroke-width="1" stroke-dasharray="3,3" rx="4"/>
+  <text x="235" y="100" text-anchor="middle" font-size="6" fill="#0e7490">Purifier</text>
 </svg>

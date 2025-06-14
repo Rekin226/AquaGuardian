@@ -1,112 +1,92 @@
-<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
-  <rect width="300" height="200" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" rx="8"/>
+  <rect width="300" height="200" fill="#f8fafc"/>
   
   <!-- Fish Tank -->
-  <rect x="20" y="120" width="80" height="60" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="4"/>
-  <text x="60" y="155" text-anchor="middle" font-size="10" fill="white" font-weight="bold">Fish Tank</text>
+  <rect x="20" y="120" width="80" height="60" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2" rx="8"/>
+  <text x="60" y="145" text-anchor="middle" font-size="10" fill="white">Fish Tank</text>
   
   <!-- Fish -->
-  <ellipse cx="45" cy="140" rx="8" ry="4" fill="#fbbf24"/>
-  <ellipse cx="75" cy="150" rx="8" ry="4" fill="#fbbf24"/>
-  
-  <!-- Pump -->
-  <circle cx="120" cy="150" r="12" fill="#10b981" stroke="#059669" stroke-width="2"/>
-  <text x="120" y="155" text-anchor="middle" font-size="8" fill="white" font-weight="bold">P</text>
-  
-  <!-- Pipes to DWC -->
-  <line x1="100" y1="140" x2="140" y2="140" stroke="#6b7280" stroke-width="3"/>
-  <line x1="140" y1="140" x2="140" y2="80" stroke="#6b7280" stroke-width="3"/>
-  <line x1="140" y1="80" x2="180" y2="80" stroke="#6b7280" stroke-width="3"/>
+  <ellipse cx="45" cy="155" rx="8" ry="4" fill="#fbbf24"/>
+  <ellipse cx="75" cy="160" rx="8" ry="4" fill="#fbbf24"/>
   
   <!-- DWC Reservoir -->
-  <rect x="180" y="70" width="100" height="30" fill="#06b6d4" stroke="#0891b2" stroke-width="2" rx="4"/>
-  <text x="230" y="90" text-anchor="middle" font-size="10" fill="white" font-weight="bold">DWC Reservoir</text>
+  <rect x="150" y="60" width="120" height="80" fill="#06b6d4" stroke="#0891b2" stroke-width="2" rx="8"/>
+  <text x="210" y="85" text-anchor="middle" font-size="10" fill="white">DWC Reservoir</text>
   
   <!-- Water level -->
-  <rect x="185" y="75" width="90" height="20" fill="#0ea5e9" opacity="0.8"/>
+  <rect x="155" y="100" width="110" height="35" fill="#0ea5e9" rx="4"/>
+  
+  <!-- Plants floating on top -->
+  <g stroke="#16a34a" stroke-width="2" fill="none">
+    <path d="M170 60 L170 50 M165 55 L175 55"/>
+    <path d="M190 60 L190 50 M185 55 L195 55"/>
+    <path d="M210 60 L210 50 M205 55 L215 55"/>
+    <path d="M230 60 L230 50 M225 55 L235 55"/>
+    <path d="M250 60 L250 50 M245 55 L255 55"/>
+  </g>
+  
+  <!-- Root systems in water -->
+  <g stroke="#22c55e" stroke-width="1" fill="none">
+    <path d="M170 60 L170 90 M165 75 L175 75 M165 85 L175 85"/>
+    <path d="M190 60 L190 90 M185 75 L195 75 M185 85 L195 85"/>
+    <path d="M210 60 L210 90 M205 75 L215 75 M205 85 L215 85"/>
+    <path d="M230 60 L230 90 M225 75 L235 75 M225 85 L235 85"/>
+    <path d="M250 60 L250 90 M245 75 L255 75 M245 85 L255 85"/>
+  </g>
   
   <!-- Air stones -->
-  <circle cx="200" cy="90" r="3" fill="#f3f4f6" stroke="#9ca3af"/>
-  <circle cx="220" cy="90" r="3" fill="#f3f4f6" stroke="#9ca3af"/>
-  <circle cx="240" cy="90" r="3" fill="#f3f4f6" stroke="#9ca3af"/>
-  <circle cx="260" cy="90" r="3" fill="#f3f4f6" stroke="#9ca3af"/>
+  <circle cx="170" cy="125" r="4" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+  <circle cx="210" cy="125" r="4" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+  <circle cx="250" cy="125" r="4" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
   
   <!-- Air bubbles -->
-  <circle cx="200" cy="82" r="1" fill="#ffffff" opacity="0.8"/>
-  <circle cx="202" cy="78" r="1" fill="#ffffff" opacity="0.6"/>
-  <circle cx="220" cy="83" r="1" fill="#ffffff" opacity="0.8"/>
-  <circle cx="218" cy="79" r="1" fill="#ffffff" opacity="0.6"/>
-  <circle cx="240" cy="81" r="1" fill="#ffffff" opacity="0.8"/>
-  <circle cx="242" cy="77" r="1" fill="#ffffff" opacity="0.6"/>
-  <circle cx="260" cy="82" r="1" fill="#ffffff" opacity="0.8"/>
-  <circle cx="258" cy="78" r="1" fill="#ffffff" opacity="0.6"/>
+  <circle cx="168" cy="115" r="1" fill="#ffffff" opacity="0.7"/>
+  <circle cx="172" cy="110" r="1" fill="#ffffff" opacity="0.7"/>
+  <circle cx="170" cy="105" r="1" fill="#ffffff" opacity="0.7"/>
+  
+  <circle cx="208" cy="115" r="1" fill="#ffffff" opacity="0.7"/>
+  <circle cx="212" cy="110" r="1" fill="#ffffff" opacity="0.7"/>
+  <circle cx="210" cy="105" r="1" fill="#ffffff" opacity="0.7"/>
+  
+  <circle cx="248" cy="115" r="1" fill="#ffffff" opacity="0.7"/>
+  <circle cx="252" cy="110" r="1" fill="#ffffff" opacity="0.7"/>
+  <circle cx="250" cy="105" r="1" fill="#ffffff" opacity="0.7"/>
   
   <!-- Air pump -->
-  <rect x="120" y="110" width="20" height="15" fill="#f59e0b" stroke="#d97706" stroke-width="1" rx="2"/>
-  <text x="130" y="120" text-anchor="middle" font-size="6" fill="white" font-weight="bold">AIR</text>
+  <rect x="280" y="140" width="15" height="10" fill="#8b5cf6" stroke="#7c3aed" stroke-width="1" rx="2"/>
+  <text x="287" y="148" text-anchor="middle" font-size="6" fill="white">Air</text>
   
   <!-- Air lines -->
-  <line x1="140" y1="117" x2="200" y2="90" stroke="#374151" stroke-width="1" stroke-dasharray="2,2"/>
-  <line x1="140" y1="117" x2="220" y2="90" stroke="#374151" stroke-width="1" stroke-dasharray="2,2"/>
-  <line x1="140" y1="117" x2="240" y2="90" stroke="#374151" stroke-width="1" stroke-dasharray="2,2"/>
-  <line x1="140" y1="117" x2="260" y2="90" stroke="#374151" stroke-width="1" stroke-dasharray="2,2"/>
+  <line x1="280" y1="145" x2="250" y2="125" stroke="#6b7280" stroke-width="2" stroke-dasharray="2,2"/>
+  <line x1="280" y1="145" x2="210" y2="125" stroke="#6b7280" stroke-width="2" stroke-dasharray="2,2"/>
+  <line x1="280" y1="145" x2="170" y2="125" stroke="#6b7280" stroke-width="2" stroke-dasharray="2,2"/>
   
-  <!-- Net pots with plants -->
-  <g transform="translate(190,55)">
-    <circle cx="0" cy="15" r="6" fill="#374151" stroke="#1f2937"/>
-    <line x1="0" y1="15" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="5" ry="3" fill="#22c55e"/>
-    <!-- Roots -->
-    <line x1="-2" y1="15" x2="-2" y2="25" stroke="#f3f4f6" stroke-width="1"/>
-    <line x1="0" y1="15" x2="0" y2="27" stroke="#f3f4f6" stroke-width="1"/>
-    <line x1="2" y1="15" x2="2" y2="24" stroke="#f3f4f6" stroke-width="1"/>
-  </g>
-  <g transform="translate(210,55)">
-    <circle cx="0" cy="15" r="6" fill="#374151" stroke="#1f2937"/>
-    <line x1="0" y1="15" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="5" ry="3" fill="#22c55e"/>
-    <line x1="-2" y1="15" x2="-2" y2="25" stroke="#f3f4f6" stroke-width="1"/>
-    <line x1="0" y1="15" x2="0" y2="27" stroke="#f3f4f6" stroke-width="1"/>
-    <line x1="2" y1="15" x2="2" y2="24" stroke="#f3f4f6" stroke-width="1"/>
-  </g>
-  <g transform="translate(230,55)">
-    <circle cx="0" cy="15" r="6" fill="#374151" stroke="#1f2937"/>
-    <line x1="0" y1="15" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="5" ry="3" fill="#22c55e"/>
-    <line x1="-2" y1="15" x2="-2" y2="25" stroke="#f3f4f6" stroke-width="1"/>
-    <line x1="0" y1="15" x2="0" y2="27" stroke="#f3f4f6" stroke-width="1"/>
-    <line x1="2" y1="15" x2="2" y2="24" stroke="#f3f4f6" stroke-width="1"/>
-  </g>
-  <g transform="translate(250,55)">
-    <circle cx="0" cy="15" r="6" fill="#374151" stroke="#1f2937"/>
-    <line x1="0" y1="15" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="5" ry="3" fill="#22c55e"/>
-    <line x1="-2" y1="15" x2="-2" y2="25" stroke="#f3f4f6" stroke-width="1"/>
-    <line x1="0" y1="15" x2="0" y2="27" stroke="#f3f4f6" stroke-width="1"/>
-    <line x1="2" y1="15" x2="2" y2="24" stroke="#f3f4f6" stroke-width="1"/>
-  </g>
-  <g transform="translate(270,55)">
-    <circle cx="0" cy="15" r="6" fill="#374151" stroke="#1f2937"/>
-    <line x1="0" y1="15" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
-    <ellipse cx="0" cy="0" rx="5" ry="3" fill="#22c55e"/>
-    <line x1="-2" y1="15" x2="-2" y2="25" stroke="#f3f4f6" stroke-width="1"/>
-    <line x1="0" y1="15" x2="0" y2="27" stroke="#f3f4f6" stroke-width="1"/>
-    <line x1="2" y1="15" x2="2" y2="24" stroke="#f3f4f6" stroke-width="1"/>
-  </g>
+  <!-- Water pump -->
+  <circle cx="120" cy="150" r="15" fill="#10b981" stroke="#059669" stroke-width="2"/>
+  <text x="120" y="155" text-anchor="middle" font-size="8" fill="white">Pump</text>
+  
+  <!-- Water pipes -->
+  <line x1="100" y1="150" x2="135" y2="150" stroke="#6b7280" stroke-width="4"/>
+  <line x1="135" y1="150" x2="150" y2="120" stroke="#6b7280" stroke-width="4"/>
+  <line x1="150" y1="120" x2="150" y2="100" stroke="#6b7280" stroke-width="4"/>
   
   <!-- Return pipe -->
-  <line x1="180" y1="90" x2="140" y2="90" stroke="#6b7280" stroke-width="3"/>
-  <line x1="140" y1="90" x2="140" y2="160" stroke="#6b7280" stroke-width="3"/>
-  <line x1="140" y1="160" x2="100" y2="160" stroke="#6b7280" stroke-width="3"/>
+  <line x1="270" y1="120" x2="270" y2="180" stroke="#6b7280" stroke-width="4"/>
+  <line x1="270" y1="180" x2="100" y2="180" stroke="#6b7280" stroke-width="4"/>
+  <line x1="100" y1="180" x2="100" y2="150" stroke="#6b7280" stroke-width="4"/>
   
   <!-- Flow arrows -->
-  <polygon points="125,137 135,140 125,143" fill="#059669"/>
-  <polygon points="137,85 140,75 143,85" fill="#059669"/>
-  <polygon points="165,77 175,80 165,83" fill="#059669"/>
-  <polygon points="125,163 135,160 125,157" fill="#059669"/>
+  <polygon points="140,145 150,150 140,155" fill="#ef4444"/>
+  <polygon points="155,115 150,105 145,115" fill="#ef4444"/>
+  <polygon points="275,175 270,185 265,175" fill="#ef4444"/>
+  <polygon points="105,175 95,180 105,185" fill="#ef4444"/>
   
-  <!-- Title -->
-  <text x="150" y="25" text-anchor="middle" font-size="14" fill="#1f2937" font-weight="bold">DWC System</text>
-  <text x="150" y="40" text-anchor="middle" font-size="10" fill="#6b7280">Deep Water Culture</text>
+  <!-- Bio-filter placeholder -->
+  <rect x="150" y="150" width="40" height="25" fill="none" stroke="#4ade80" stroke-width="1" stroke-dasharray="3,3" rx="4"/>
+  <text x="170" y="165" text-anchor="middle" font-size="6" fill="#16a34a">Bio-Filter</text>
+  
+  <!-- Purifier placeholder -->
+  <rect x="220" y="155" width="30" height="20" fill="none" stroke="#06b6d4" stroke-width="1" stroke-dasharray="3,3" rx="4"/>
+  <text x="235" y="167" text-anchor="middle" font-size="6" fill="#0e7490">Purifier</text>
 </svg>

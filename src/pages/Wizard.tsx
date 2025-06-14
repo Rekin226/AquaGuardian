@@ -5,6 +5,7 @@ import { useSubscription } from '../lib/subscription'
 import { supabase } from '../lib/supabase'
 import { WizardStep } from '../components/wizard/WizardStep'
 import { ProFeatureButton } from '../components/ProGate'
+import { SYSTEM_PRESETS, validateSystemParams, VALIDATION_RULES } from '../lib/simulator'
 import { motion } from 'framer-motion'
 import { 
   Settings,
@@ -15,11 +16,20 @@ import {
   Zap,
   CheckCircle,
   Sparkles,
-  Crown
+  Crown,
+  AlertCircle,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react'
 
 interface WizardData {
   systemType: string
+  mode: 'quick' | 'custom'
+  tankVol?: number
+  bioFilterVol?: number
+  purifierVol?: number
+  sumpVol?: number
+  pipeDia?: number
   farmSize: string
   fishSpecies: string[]
   cropChoice: string[]
@@ -34,8 +44,10 @@ export function Wizard() {
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [simulationCount, setSimulationCount] = useState(0)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [data, setData] = useState<WizardData>({
     systemType: '',
+    mode: 'quick',
     farmSize: '',
     fishSpecies: [],
     cropChoice: [],
@@ -47,6 +59,16 @@ export function Wizard() {
   const maxFreeSimulations = 3
 
   const handleNext = async () => {
+    // Validate current step
+    if (currentStep === 0 && data.mode === 'custom') {
+      const validation = validateSystemParams(data)
+      if (!validation.isValid) {
+        setValidationErrors(validation.errors)
+        return
+      }
+    }
+    setValidationErrors([])
+
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1)
     } else {
@@ -70,7 +92,7 @@ export function Wizard() {
 
     setLoading(true)
     try {
-      const designName = `${data.systemType.toUpperCase()} Aquaponic System - ${new Date().toLocaleDateString()}`
+      const designName = `${data.systemType.toUpperCase()} ${data.mode === 'custom' ? 'Custom' : 'Quick'} System - ${new Date().toLocaleDateString()}`
       
       const { data: design, error } = await supabase
         .from('designs')
@@ -96,7 +118,12 @@ export function Wizard() {
   const canGoNext = () => {
     switch (currentStep) {
       case 0:
-        return data.systemType !== ''
+        if (data.systemType === '') return false
+        if (data.mode === 'custom') {
+          const validation = validateSystemParams(data)
+          return validation.isValid
+        }
+        return true
       case 1:
         return data.farmSize !== ''
       case 2:
@@ -113,7 +140,46 @@ export function Wizard() {
   }
 
   const updateData = (field: keyof WizardData, value: any) => {
-    setData(prev => ({ ...prev, [field]: value }))
+    setData(prev => {
+      const newData = { ...prev, [field]: value }
+      
+      // Auto-populate preset values when system type changes in quick mode
+      if (field === 'systemType' && newData.mode === 'quick') {
+        const preset = SYSTEM_PRESETS[value as keyof typeof SYSTEM_PRESETS]
+        if (preset) {
+          return {
+            ...newData,
+            tankVol: preset.tankVol,
+            bioFilterVol: preset.bioFilterVol,
+            purifierVol: preset.purifierVol,
+            sumpVol: preset.sumpVol,
+            pipeDia: preset.pipeDia
+          }
+        }
+      }
+      
+      // Clear custom values when switching to quick mode
+      if (field === 'mode' && value === 'quick' && newData.systemType) {
+        const preset = SYSTEM_PRESETS[newData.systemType as keyof typeof SYSTEM_PRESETS]
+        if (preset) {
+          return {
+            ...newData,
+            tankVol: preset.tankVol,
+            bioFilterVol: preset.bioFilterVol,
+            purifierVol: preset.purifierVol,
+            sumpVol: preset.sumpVol,
+            pipeDia: preset.pipeDia
+          }
+        }
+      }
+      
+      return newData
+    })
+    
+    // Clear validation errors when user makes changes
+    if (validationErrors.length > 0) {
+      setValidationErrors([])
+    }
   }
 
   const renderStep = () => {
@@ -121,15 +187,59 @@ export function Wizard() {
       case 0:
         return (
           <WizardStep
-            title="System Type"
-            description="Choose the type of aquaponic system you want to build"
+            title="System Type & Configuration"
+            description="Choose your aquaponic system type and configuration mode"
             currentStep={currentStep + 1}
             totalSteps={totalSteps}
             onNext={handleNext}
             onPrevious={handlePrevious}
             canGoNext={canGoNext()}
           >
-            <div className="space-y-6">
+            <div className="space-y-8">
+              {/* Simulation Counter for Free Users */}
+              {!isPro && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Crown className="h-5 w-5 text-amber-600" />
+                      <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                        Free Plan: {simulationCount}/{maxFreeSimulations} simulations used
+                      </span>
+                    </div>
+                    {simulationCount >= maxFreeSimulations && (
+                      <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-800 px-2 py-1 rounded-full">
+                        Upgrade for unlimited
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Mode Toggle */}
+              <div className="flex items-center justify-center space-x-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-2xl">
+                <span className={`text-sm font-medium ${data.mode === 'quick' ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-400'}`}>
+                  Quick Setup
+                </span>
+                <button
+                  onClick={() => updateData('mode', data.mode === 'quick' ? 'custom' : 'quick')}
+                  className="relative"
+                >
+                  {data.mode === 'quick' ? (
+                    <ToggleLeft className="h-8 w-8 text-emerald-600" />
+                  ) : (
+                    <ToggleRight className="h-8 w-8 text-emerald-600" />
+                  )}
+                </button>
+                <span className={`text-sm font-medium ${data.mode === 'custom' ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-400'}`}>
+                  Custom Setup
+                </span>
+              </div>
+
+              {/* System Type Selection */}
               <div className="grid grid-cols-1 gap-6">
                 {[
                   { 
@@ -215,6 +325,88 @@ export function Wizard() {
                   </motion.div>
                 ))}
               </div>
+
+              {/* Custom Configuration Panel */}
+              {data.systemType && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6"
+                >
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center space-x-2">
+                    <Settings className="h-5 w-5" />
+                    <span>System Configuration</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      data.mode === 'quick' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                    }`}>
+                      {data.mode === 'quick' ? 'Preset Values' : 'Custom Values'}
+                    </span>
+                  </h3>
+
+                  {/* Validation Errors */}
+                  {validationErrors.length > 0 && (
+                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                      <div className="flex items-start space-x-2">
+                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
+                            Validation Errors
+                          </h4>
+                          <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
+                            {validationErrors.map((error, index) => (
+                              <li key={index}>• {error}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { key: 'tankVol', label: 'Tank Volume (L)', min: VALIDATION_RULES.tankVol.min, max: VALIDATION_RULES.tankVol.max },
+                      { key: 'bioFilterVol', label: 'Bio-Filter Volume (L)', min: VALIDATION_RULES.bioFilterVol.min, max: VALIDATION_RULES.bioFilterVol.max },
+                      { key: 'purifierVol', label: 'Purifier Volume (L)', min: VALIDATION_RULES.purifierVol.min, max: VALIDATION_RULES.purifierVol.max },
+                      { key: 'sumpVol', label: 'Sump Volume (L)', min: VALIDATION_RULES.sumpVol.min, max: VALIDATION_RULES.sumpVol.max },
+                      { key: 'pipeDia', label: 'Pipe Diameter (mm)', min: VALIDATION_RULES.pipeDia.min, max: VALIDATION_RULES.pipeDia.max },
+                    ].map((field) => (
+                      <div key={field.key}>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          {field.label}
+                        </label>
+                        <input
+                          type="number"
+                          min={field.min}
+                          max={field.max}
+                          value={data[field.key as keyof WizardData] || ''}
+                          onChange={(e) => updateData(field.key as keyof WizardData, parseInt(e.target.value) || 0)}
+                          disabled={data.mode === 'quick'}
+                          className={`w-full px-4 py-3 border rounded-2xl transition-colors ${
+                            data.mode === 'quick' 
+                              ? 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                          }`}
+                          placeholder={`${field.min}-${field.max}`}
+                        />
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          Range: {field.min}-{field.max}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {data.mode === 'quick' && (
+                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <strong>Quick Setup:</strong> Using optimized preset values for {data.systemType.toUpperCase()} systems. 
+                        Switch to Custom Setup to modify these values.
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </div>
           </WizardStep>
         )
@@ -231,29 +423,6 @@ export function Wizard() {
             canGoNext={canGoNext()}
           >
             <div className="space-y-4">
-              {/* Simulation Counter for Free Users */}
-              {!isPro && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Crown className="h-5 w-5 text-amber-600" />
-                      <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                        Free Plan: {simulationCount}/{maxFreeSimulations} simulations used
-                      </span>
-                    </div>
-                    {simulationCount >= maxFreeSimulations && (
-                      <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-800 px-2 py-1 rounded-full">
-                        Upgrade for unlimited
-                      </span>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   { value: 'small', label: 'Small (Home/Hobby)', desc: 'Up to 50 sq ft', icon: '🏠' },

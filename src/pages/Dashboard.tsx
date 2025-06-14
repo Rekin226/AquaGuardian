@@ -168,7 +168,7 @@ export function Dashboard() {
                   {design.name}
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">
-                  {design.params.systemType?.toUpperCase()} System • Created {new Date(design.created_at).toLocaleDateString()}
+                  {design.params.systemType?.toUpperCase()} System • {design.params.mode === 'custom' ? 'Custom' : 'Quick'} Setup • Created {new Date(design.created_at).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -256,10 +256,10 @@ export function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
                 {[
                   { label: 'System Type', value: design.params.systemType?.toUpperCase() || 'Not specified' },
+                  { label: 'Configuration', value: design.params.mode === 'custom' ? 'Custom' : 'Quick Setup' },
                   { label: 'Farm Size', value: design.params.farmSize },
                   { label: 'Fish Species', value: design.params.fishSpecies?.join(', ') || 'None' },
                   { label: 'Crops', value: design.params.cropChoice?.join(', ') || 'None' },
-                  { label: 'Budget', value: design.params.budget?.replace('-', ' - $') },
                   { label: 'Energy Source', value: design.params.energySource }
                 ].map((item, index) => (
                   <motion.div
@@ -415,9 +415,15 @@ export function Dashboard() {
               flowRate: '2-4 L/min',
               description: 'System specifications based on your configuration',
               advantages: [],
-              considerations: []
+              considerations: [],
+              tankVol: design.params.tankVol,
+              bioFilterVol: design.params.bioFilterVol,
+              purifierVol: design.params.purifierVol,
+              sumpVol: design.params.sumpVol,
+              pipeDia: design.params.pipeDia
             }}
             onChangeSystem={handleChangeSystem}
+            isCustomMode={design.params.mode === 'custom'}
           />
         )}
 
