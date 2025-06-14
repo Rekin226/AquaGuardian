@@ -1,0 +1,82 @@
+<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="300" height="200" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" rx="8"/>
+  
+  <!-- Fish Tank -->
+  <rect x="20" y="120" width="80" height="60" fill="#3b82f6" stroke="#1e40af" stroke-width="2" rx="4"/>
+  <text x="60" y="155" text-anchor="middle" font-size="10" fill="white" font-weight="bold">Fish Tank</text>
+  
+  <!-- Fish -->
+  <ellipse cx="45" cy="140" rx="8" ry="4" fill="#fbbf24"/>
+  <ellipse cx="75" cy="150" rx="8" ry="4" fill="#fbbf24"/>
+  
+  <!-- Pump -->
+  <circle cx="120" cy="150" r="12" fill="#10b981" stroke="#059669" stroke-width="2"/>
+  <text x="120" y="155" text-anchor="middle" font-size="8" fill="white" font-weight="bold">P</text>
+  
+  <!-- Pipes to NFT channels -->
+  <line x1="100" y1="140" x2="140" y2="140" stroke="#6b7280" stroke-width="3"/>
+  <line x1="140" y1="140" x2="140" y2="70" stroke="#6b7280" stroke-width="3"/>
+  <line x1="140" y1="70" x2="180" y2="70" stroke="#6b7280" stroke-width="3"/>
+  
+  <!-- NFT Channels -->
+  <rect x="180" y="60" width="100" height="8" fill="#8b5cf6" stroke="#7c3aed" stroke-width="1" rx="4"/>
+  <rect x="180" y="80" width="100" height="8" fill="#8b5cf6" stroke="#7c3aed" stroke-width="1" rx="4"/>
+  <rect x="180" y="100" width="100" height="8" fill="#8b5cf6" stroke="#7c3aed" stroke-width="1" rx="4"/>
+  
+  <!-- Water flow in channels -->
+  <rect x="185" y="62" width="90" height="4" fill="#06b6d4" opacity="0.7"/>
+  <rect x="185" y="82" width="90" height="4" fill="#06b6d4" opacity="0.7"/>
+  <rect x="185" y="102" width="90" height="4" fill="#06b6d4" opacity="0.7"/>
+  
+  <!-- Plants in net pots -->
+  <g transform="translate(190,50)">
+    <circle cx="0" cy="10" r="4" fill="#374151" stroke="#1f2937"/>
+    <line x1="0" y1="10" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
+    <ellipse cx="0" cy="0" rx="4" ry="2" fill="#22c55e"/>
+  </g>
+  <g transform="translate(210,50)">
+    <circle cx="0" cy="10" r="4" fill="#374151" stroke="#1f2937"/>
+    <line x1="0" y1="10" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
+    <ellipse cx="0" cy="0" rx="4" ry="2" fill="#22c55e"/>
+  </g>
+  <g transform="translate(230,50)">
+    <circle cx="0" cy="10" r="4" fill="#374151" stroke="#1f2937"/>
+    <line x1="0" y1="10" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
+    <ellipse cx="0" cy="0" rx="4" ry="2" fill="#22c55e"/>
+  </g>
+  <g transform="translate(250,50)">
+    <circle cx="0" cy="10" r="4" fill="#374151" stroke="#1f2937"/>
+    <line x1="0" y1="10" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
+    <ellipse cx="0" cy="0" rx="4" ry="2" fill="#22c55e"/>
+  </g>
+  <g transform="translate(270,50)">
+    <circle cx="0" cy="10" r="4" fill="#374151" stroke="#1f2937"/>
+    <line x1="0" y1="10" x2="0" y2="0" stroke="#16a34a" stroke-width="2"/>
+    <ellipse cx="0" cy="0" rx="4" ry="2" fill="#22c55e"/>
+  </g>
+  
+  <!-- Distribution pipes -->
+  <line x1="180" y1="70" x2="180" y2="84" stroke="#6b7280" stroke-width="2"/>
+  <line x1="180" y1="84" x2="180" y2="104" stroke="#6b7280" stroke-width="2"/>
+  
+  <!-- Return collection -->
+  <line x1="280" y1="68" x2="290" y2="68" stroke="#6b7280" stroke-width="2"/>
+  <line x1="280" y1="88" x2="290" y2="88" stroke="#6b7280" stroke-width="2"/>
+  <line x1="280" y1="108" x2="290" y2="108" stroke="#6b7280" stroke-width="2"/>
+  <line x1="290" y1="68" x2="290" y2="108" stroke="#6b7280" stroke-width="2"/>
+  <line x1="290" y1="108" x2="290" y2="160" stroke="#6b7280" stroke-width="2"/>
+  <line x1="290" y1="160" x2="100" y2="160" stroke="#6b7280" stroke-width="2"/>
+  
+  <!-- Flow arrows -->
+  <polygon points="125,137 135,140 125,143" fill="#059669"/>
+  <polygon points="137,75 140,65 143,75" fill="#059669"/>
+  <polygon points="165,67 175,70 165,73" fill="#059669"/>
+  <polygon points="200,65 210,68 200,71" fill="#06b6d4"/>
+  <polygon points="220,65 230,68 220,71" fill="#06b6d4"/>
+  <polygon points="240,65 250,68 240,71" fill="#06b6d4"/>
+  
+  <!-- Title -->
+  <text x="150" y="25" text-anchor="middle" font-size="14" fill="#1f2937" font-weight="bold">NFT System</text>
+  <text x="150" y="40" text-anchor="middle" font-size="10" fill="#6b7280">Nutrient Film Technique</text>
+</svg>

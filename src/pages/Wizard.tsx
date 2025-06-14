@@ -7,6 +7,7 @@ import { WizardStep } from '../components/wizard/WizardStep'
 import { ProFeatureButton } from '../components/ProGate'
 import { motion } from 'framer-motion'
 import { 
+  Settings,
   Home, 
   Fish, 
   Leaf, 
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react'
 
 interface WizardData {
+  systemType: string
   farmSize: string
   fishSpecies: string[]
   cropChoice: string[]
@@ -29,10 +31,11 @@ export function Wizard() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { isPro } = useSubscription()
-  const [currentStep, setCurrentStep] = useState(1)
+  const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [simulationCount, setSimulationCount] = useState(0)
   const [data, setData] = useState<WizardData>({
+    systemType: '',
     farmSize: '',
     fishSpecies: [],
     cropChoice: [],
@@ -40,11 +43,11 @@ export function Wizard() {
     energySource: '',
   })
 
-  const totalSteps = 5
+  const totalSteps = 6
   const maxFreeSimulations = 3
 
   const handleNext = async () => {
-    if (currentStep < totalSteps) {
+    if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1)
     } else {
       await completeWizard()
@@ -52,7 +55,7 @@ export function Wizard() {
   }
 
   const handlePrevious = () => {
-    if (currentStep > 1) {
+    if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
     }
   }
@@ -67,7 +70,7 @@ export function Wizard() {
 
     setLoading(true)
     try {
-      const designName = `Aquaponic System - ${new Date().toLocaleDateString()}`
+      const designName = `${data.systemType.toUpperCase()} Aquaponic System - ${new Date().toLocaleDateString()}`
       
       const { data: design, error } = await supabase
         .from('designs')
@@ -92,6 +95,8 @@ export function Wizard() {
 
   const canGoNext = () => {
     switch (currentStep) {
+      case 0:
+        return data.systemType !== ''
       case 1:
         return data.farmSize !== ''
       case 2:
@@ -113,12 +118,113 @@ export function Wizard() {
 
   const renderStep = () => {
     switch (currentStep) {
+      case 0:
+        return (
+          <WizardStep
+            title="System Type"
+            description="Choose the type of aquaponic system you want to build"
+            currentStep={currentStep + 1}
+            totalSteps={totalSteps}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            canGoNext={canGoNext()}
+          >
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
+                {[
+                  { 
+                    value: 'media-bed', 
+                    label: 'Media Bed System', 
+                    desc: 'Uses gravel or clay pebbles as growing medium. Great for beginners.',
+                    icon: '🪨',
+                    difficulty: 'Beginner',
+                    efficiency: '85%'
+                  },
+                  { 
+                    value: 'nft', 
+                    label: 'NFT System', 
+                    desc: 'Nutrient Film Technique with shallow channels. Efficient and space-saving.',
+                    icon: '🌊',
+                    difficulty: 'Intermediate',
+                    efficiency: '95%'
+                  },
+                  { 
+                    value: 'dwc', 
+                    label: 'DWC System', 
+                    desc: 'Deep Water Culture with roots in oxygenated water. Fastest growth.',
+                    icon: '💧',
+                    difficulty: 'Advanced',
+                    efficiency: '100%'
+                  },
+                ].map((option, index) => (
+                  <motion.div
+                    key={option.value}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-200 ${
+                      data.systemType === option.value
+                        ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 shadow-lg'
+                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg'
+                    }`}
+                  >
+                    <button
+                      onClick={() => updateData('systemType', option.value)}
+                      className="w-full p-6 text-left"
+                    >
+                      <div className="flex items-start space-x-4">
+                        <div className="text-3xl">{option.icon}</div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                              {option.label}
+                            </h3>
+                            {data.systemType === option.value && (
+                              <CheckCircle className="h-6 w-6 text-emerald-500" />
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                            {option.desc}
+                          </p>
+                          <div className="flex items-center space-x-4">
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              option.difficulty === 'Beginner' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                              option.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                              'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                            }`}>
+                              {option.difficulty}
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              Efficiency: {option.efficiency}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                    
+                    {/* Preview SVG */}
+                    <div className="px-6 pb-6">
+                      <div className="bg-white dark:bg-slate-700 rounded-xl p-4 border border-slate-200 dark:border-slate-600">
+                        <img 
+                          src={`/svg/${option.value}.svg`} 
+                          alt={`${option.label} diagram`}
+                          className="w-full h-auto max-h-32 object-contain"
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </WizardStep>
+        )
+
       case 1:
         return (
           <WizardStep
             title="Farm Size"
             description="What size aquaponic system are you planning?"
-            currentStep={currentStep}
+            currentStep={currentStep + 1}
             totalSteps={totalSteps}
             onNext={handleNext}
             onPrevious={handlePrevious}
@@ -195,7 +301,7 @@ export function Wizard() {
           <WizardStep
             title="Fish Species"
             description="Which fish species would you like to raise?"
-            currentStep={currentStep}
+            currentStep={currentStep + 1}
             totalSteps={totalSteps}
             onNext={handleNext}
             onPrevious={handlePrevious}
@@ -263,7 +369,7 @@ export function Wizard() {
           <WizardStep
             title="Crop Choice"
             description="What crops do you want to grow in your system?"
-            currentStep={currentStep}
+            currentStep={currentStep + 1}
             totalSteps={totalSteps}
             onNext={handleNext}
             onPrevious={handlePrevious}
@@ -331,7 +437,7 @@ export function Wizard() {
           <WizardStep
             title="Budget"
             description="What's your budget range for this aquaponic system?"
-            currentStep={currentStep}
+            currentStep={currentStep + 1}
             totalSteps={totalSteps}
             onNext={handleNext}
             onPrevious={handlePrevious}
@@ -385,7 +491,7 @@ export function Wizard() {
           <WizardStep
             title="Energy Source"
             description="How do you plan to power your aquaponic system?"
-            currentStep={currentStep}
+            currentStep={currentStep + 1}
             totalSteps={totalSteps}
             onNext={!isPro && simulationCount >= maxFreeSimulations ? () => {} : handleNext}
             onPrevious={handlePrevious}

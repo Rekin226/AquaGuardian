@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { supabase, Design } from '../lib/supabase'
 import { simulate, SimulationResult } from '../lib/simulator'
 import { TokenizationTab } from '../components/TokenizationTab'
+import { SystemPreview } from '../components/SystemPreview'
 import { AnimatedCounter } from '../components/AnimatedCounter'
 import { YieldChart } from '../components/YieldChart'
 import { motion } from 'framer-motion'
@@ -20,7 +21,8 @@ import {
   Share2,
   Coins,
   Activity,
-  Target
+  Target,
+  Eye
 } from 'lucide-react'
 
 export function Dashboard() {
@@ -30,7 +32,7 @@ export function Dashboard() {
   const [simulation, setSimulation] = useState<SimulationResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'tokenization'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'system' | 'tokenization'>('overview')
 
   useEffect(() => {
     if (id && user) {
@@ -59,6 +61,11 @@ export function Dashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleChangeSystem = () => {
+    // Navigate back to wizard to change system type
+    window.location.href = '/wizard'
   }
 
   if (loading) {
@@ -161,7 +168,7 @@ export function Dashboard() {
                   {design.name}
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">
-                  Created {new Date(design.created_at).toLocaleDateString()}
+                  {design.params.systemType?.toUpperCase()} System • Created {new Date(design.created_at).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -204,6 +211,19 @@ export function Dashboard() {
               </div>
             </button>
             <button
+              onClick={() => setActiveTab('system')}
+              className={`relative px-6 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+                activeTab === 'system'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Eye className="h-4 w-4" />
+                <span>System Preview</span>
+              </div>
+            </button>
+            <button
               onClick={() => setActiveTab('tokenization')}
               className={`relative px-6 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
                 activeTab === 'tokenization'
@@ -233,8 +253,9 @@ export function Dashboard() {
                 <Target className="h-6 w-6 text-emerald-600" />
                 <span>System Configuration</span>
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
                 {[
+                  { label: 'System Type', value: design.params.systemType?.toUpperCase() || 'Not specified' },
                   { label: 'Farm Size', value: design.params.farmSize },
                   { label: 'Fish Species', value: design.params.fishSpecies?.join(', ') || 'None' },
                   { label: 'Crops', value: design.params.cropChoice?.join(', ') || 'None' },
@@ -346,7 +367,7 @@ export function Dashboard() {
                 {[
                   {
                     title: 'Production Efficiency',
-                    description: `Your system is projected to produce ${(simulation.fishYieldKg + simulation.vegYieldKg).toFixed(1)} kg of food annually with ${simulation.systemEfficiency}% efficiency.`,
+                    description: `Your ${design.params.systemType?.toUpperCase()} system is projected to produce ${(simulation.fishYieldKg + simulation.vegYieldKg).toFixed(1)} kg of food annually with ${simulation.systemEfficiency}% efficiency.`,
                     color: 'bg-emerald-500'
                   },
                   {
@@ -381,6 +402,23 @@ export function Dashboard() {
               </div>
             </motion.div>
           </>
+        )}
+
+        {activeTab === 'system' && (
+          <SystemPreview 
+            svgId={design.params.systemType || 'media-bed'} 
+            params={{
+              tankSize: '100-500L',
+              pumpRate: '300-800 L/h',
+              pipeDiameter: '25-32mm',
+              waterVolume: '200-1000L',
+              flowRate: '2-4 L/min',
+              description: 'System specifications based on your configuration',
+              advantages: [],
+              considerations: []
+            }}
+            onChangeSystem={handleChangeSystem}
+          />
         )}
 
         {activeTab === 'tokenization' && simulation && (

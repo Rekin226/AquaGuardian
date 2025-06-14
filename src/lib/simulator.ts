@@ -1,4 +1,5 @@
 export interface WizardParams {
+  systemType?: string
   farmSize: string
   fishSpecies: string[]
   cropChoice: string[]
@@ -21,6 +22,20 @@ const FARM_SIZE_MULTIPLIERS = {
   medium: 10,    // 500 sq ft
   large: 50,     // 2500 sq ft
   custom: 25     // assume mid-large for custom
+}
+
+// System type efficiency multipliers
+const SYSTEM_TYPE_EFFICIENCY = {
+  'media-bed': 1.0,    // Baseline efficiency
+  'nft': 1.15,         // 15% more efficient for plant growth
+  'dwc': 1.25          // 25% more efficient for plant growth
+}
+
+// System type water usage multipliers
+const SYSTEM_WATER_USAGE = {
+  'media-bed': 1.0,    // Baseline water usage
+  'nft': 0.8,          // 20% less water usage
+  'dwc': 0.9           // 10% less water usage
 }
 
 // Fish yield per species (kg per year per unit area)
@@ -80,6 +95,8 @@ const ENERGY_EFFICIENCY = {
  */
 export function simulate(params: WizardParams): SimulationResult {
   const sizeMultiplier = FARM_SIZE_MULTIPLIERS[params.farmSize as keyof typeof FARM_SIZE_MULTIPLIERS] || 1
+  const systemTypeEfficiency = SYSTEM_TYPE_EFFICIENCY[params.systemType as keyof typeof SYSTEM_TYPE_EFFICIENCY] || 1.0
+  const systemWaterMultiplier = SYSTEM_WATER_USAGE[params.systemType as keyof typeof SYSTEM_WATER_USAGE] || 1.0
   
   // Calculate fish yield (kg/year)
   // Formula: Sum of (species_yield_rate * size_multiplier * species_efficiency)
@@ -91,34 +108,37 @@ export function simulate(params: WizardParams): SimulationResult {
   }, 0)
 
   // Calculate vegetable yield (kg/year)  
-  // Formula: Sum of (crop_yield_rate * size_multiplier * crop_synergy)
+  // Formula: Sum of (crop_yield_rate * size_multiplier * crop_synergy * system_efficiency)
   const vegYieldKg = params.cropChoice.reduce((total, crop) => {
     const baseYield = VEG_YIELD_RATES[crop as keyof typeof VEG_YIELD_RATES] || 15
     // Diverse crops can have synergistic effects up to a point
     const cropSynergy = Math.min(1.2, 1 + (params.cropChoice.length - 1) * 0.05)
-    return total + (baseYield * sizeMultiplier * cropSynergy)
+    return total + (baseYield * sizeMultiplier * cropSynergy * systemTypeEfficiency)
   }, 0)
 
   // Calculate daily water consumption (L/day)
-  // Formula: base_consumption * size_factor * crop_water_factor * fish_water_factor
+  // Formula: base_consumption * size_factor * crop_water_factor * fish_water_factor * system_water_multiplier
   const baseWater = WATER_CONSUMPTION_BASE[params.farmSize as keyof typeof WATER_CONSUMPTION_BASE] || 200
   const cropWaterFactor = 1 + (params.cropChoice.length * 0.1) // More crops = more water
   const fishWaterFactor = 1 + (params.fishSpecies.length * 0.15) // More fish = more water
-  const dailyWaterL = baseWater * cropWaterFactor * fishWaterFactor
+  const dailyWaterL = baseWater * cropWaterFactor * fishWaterFactor * systemWaterMultiplier
 
   // Calculate daily energy consumption (kWh/day)
   // Formula: base_energy * energy_efficiency * system_complexity
   const baseEnergy = ENERGY_CONSUMPTION_BASE[params.farmSize as keyof typeof ENERGY_CONSUMPTION_BASE] || 10
   const energyEfficiency = ENERGY_EFFICIENCY[params.energySource as keyof typeof ENERGY_EFFICIENCY] || 1.0
   const systemComplexity = 1 + ((params.fishSpecies.length + params.cropChoice.length - 2) * 0.08)
-  const dailyKWh = (baseEnergy * systemComplexity) / energyEfficiency
+  
+  // DWC systems require additional energy for air pumps
+  const systemEnergyMultiplier = params.systemType === 'dwc' ? 1.2 : 1.0
+  const dailyKWh = (baseEnergy * systemComplexity * systemEnergyMultiplier) / energyEfficiency
 
   // Calculate system efficiency (0-100%)
-  // Based on species/crop compatibility and system complexity
+  // Based on species/crop compatibility, system complexity, and system type
   const speciesComplexity = params.fishSpecies.length > 2 ? 0.9 : 1.0
   const cropComplexity = params.cropChoice.length > 4 ? 0.95 : 1.0
   const budgetEfficiency = getBudgetEfficiency(params.budget)
-  const systemEfficiency = Math.round(speciesComplexity * cropComplexity * budgetEfficiency * 100)
+  const systemEfficiency = Math.round(speciesComplexity * cropComplexity * budgetEfficiency * systemTypeEfficiency * 100)
 
   // Calculate monthly operating cost (USD)
   // Includes electricity, water, feed, and maintenance
