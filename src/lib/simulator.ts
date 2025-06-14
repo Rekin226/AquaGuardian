@@ -1,3 +1,5 @@
+import { CLIMATE_PRESETS, type ClimateKey } from '../data/climate'
+
 export interface WizardParams {
   climateKey?: ClimateKey
   customClimate?: boolean
