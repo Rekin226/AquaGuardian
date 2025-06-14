@@ -55,6 +55,76 @@ describe('Aquaponic System Simulator', () => {
     expect(result.solarFactor).toBe(1.15)
   })
 
+  it('should handle custom farm size correctly', () => {
+    const customParams: WizardParams = {
+      climateKey: 'temperate',
+      systemType: 'media-bed',
+      mode: 'quick',
+      farmSize: 'custom',
+      customFarmSize: 100, // 100 m²
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const mediumParams: WizardParams = {
+      climateKey: 'temperate',
+      systemType: 'media-bed',
+      mode: 'quick',
+      farmSize: 'medium', // ~46.5 m²
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const customResult = simulate(customParams)
+    const mediumResult = simulate(mediumParams)
+
+    // Custom 100m² should yield more than medium ~46.5m²
+    expect(customResult.fishYieldKg).toBeGreaterThan(mediumResult.fishYieldKg)
+    expect(customResult.vegYieldKg).toBeGreaterThan(mediumResult.vegYieldKg)
+    expect(customResult.dailyWaterL).toBeGreaterThan(mediumResult.dailyWaterL)
+  })
+
+  it('should validate custom farm size correctly', () => {
+    const validParams: WizardParams = {
+      climateKey: 'temperate',
+      systemType: 'media-bed',
+      mode: 'quick',
+      farmSize: 'custom',
+      customFarmSize: 50,
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const validation = validateSystemParams(validParams)
+    expect(validation.isValid).toBe(true)
+    expect(validation.errors).toHaveLength(0)
+  })
+
+  it('should reject invalid custom farm size', () => {
+    const invalidParams: WizardParams = {
+      climateKey: 'temperate',
+      systemType: 'media-bed',
+      mode: 'quick',
+      farmSize: 'custom',
+      customFarmSize: 15000, // Too large
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const validation = validateSystemParams(invalidParams)
+    expect(validation.isValid).toBe(false)
+    expect(validation.errors.length).toBeGreaterThan(0)
+    expect(validation.errors[0]).toContain('Farm size must be between 1-10000 m²')
+  })
+
   it('should apply climate factors correctly', () => {
     const tropicalParams: WizardParams = {
       climateKey: 'tropical',
@@ -336,5 +406,39 @@ describe('Aquaponic System Simulator', () => {
     const temperateResult = simulate({ ...baseParams, climateKey: 'temperate' })
 
     expect(tropicalResult.fishYieldKg).toBeGreaterThan(temperateResult.fishYieldKg)
+  })
+
+  it('should handle custom farm size with proper scaling', () => {
+    const smallCustom: WizardParams = {
+      climateKey: 'temperate',
+      systemType: 'media-bed',
+      mode: 'quick',
+      farmSize: 'custom',
+      customFarmSize: 10, // 10 m²
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const largeCustom: WizardParams = {
+      climateKey: 'temperate',
+      systemType: 'media-bed',
+      mode: 'quick',
+      farmSize: 'custom',
+      customFarmSize: 100, // 100 m²
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const smallResult = simulate(smallCustom)
+    const largeResult = simulate(largeCustom)
+
+    // Larger farm should produce proportionally more
+    expect(largeResult.fishYieldKg).toBeGreaterThan(smallResult.fishYieldKg * 5)
+    expect(largeResult.vegYieldKg).toBeGreaterThan(smallResult.vegYieldKg * 5)
+    expect(largeResult.dailyWaterL).toBeGreaterThan(smallResult.dailyWaterL * 5)
   })
 })

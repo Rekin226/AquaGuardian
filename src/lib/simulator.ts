@@ -1,5 +1,3 @@
-import { CLIMATE_PRESETS, ClimateKey } from '../data/climate'
-
 export interface WizardParams {
   climateKey?: ClimateKey
   customClimate?: boolean
@@ -13,6 +11,7 @@ export interface WizardParams {
   sumpVol?: number
   pipeDia?: number
   farmSize: string
+  customFarmSize?: number
   fishSpecies: string[]
   cropChoice: string[]
   budget: string
@@ -78,7 +77,8 @@ export const VALIDATION_RULES = {
   sumpVol: { min: 50, max: 800 },
   pipeDia: { min: 15, max: 50 },
   customTemp: { min: 10, max: 30 },
-  customSolar: { min: 0.5, max: 8 }
+  customSolar: { min: 0.5, max: 8 },
+  customFarmSize: { min: 1, max: 10000 }
 }
 
 export function validateSystemParams(params: WizardParams): { isValid: boolean; errors: string[] } {
@@ -135,6 +135,13 @@ export function validateSystemParams(params: WizardParams): { isValid: boolean; 
     }
   }
   
+  // Custom farm size validation
+  if (params.farmSize === 'custom') {
+    if (!params.customFarmSize || params.customFarmSize < VALIDATION_RULES.customFarmSize.min || params.customFarmSize > VALIDATION_RULES.customFarmSize.max) {
+      errors.push(`Farm size must be between ${VALIDATION_RULES.customFarmSize.min}-${VALIDATION_RULES.customFarmSize.max} m²`)
+    }
+  }
+  
   return {
     isValid: errors.length === 0,
     errors
@@ -143,10 +150,17 @@ export function validateSystemParams(params: WizardParams): { isValid: boolean; 
 
 // Base constants for calculations
 const FARM_SIZE_MULTIPLIERS = {
-  small: 1,      // 50 sq ft baseline
-  medium: 10,    // 500 sq ft
-  large: 50,     // 2500 sq ft
-  custom: 25     // assume mid-large for custom
+  small: 1,      // 50 sq ft baseline (4.6 m²)
+  medium: 10,    // 500 sq ft (46.5 m²)
+  large: 50,     // 2500 sq ft (232 m²)
+  custom: 25     // Will be calculated based on customFarmSize
+}
+
+// Convert square feet to square meters for reference
+const FARM_SIZE_M2 = {
+  small: 4.6,    // ~50 sq ft
+  medium: 46.5,  // ~500 sq ft
+  large: 232.3   // ~2500 sq ft
 }
 
 // Fish yield per species (kg per year per unit area)
@@ -178,7 +192,7 @@ const WATER_CONSUMPTION_BASE = {
   small: 50,    // Base daily water for small system
   medium: 400,  // Scaled for medium
   large: 1800,  // Scaled for large
-  custom: 900   // Mid-range estimate
+  custom: 900   // Will be calculated based on customFarmSize
 }
 
 // Energy consumption factors (kWh per day per unit area)
@@ -186,7 +200,7 @@ const ENERGY_CONSUMPTION_BASE = {
   small: 2.5,   // Pumps, aeration, lighting
   medium: 18,   // Scaled systems
   large: 75,    // Industrial scale
-  custom: 35    // Mid-range estimate
+  custom: 35    // Will be calculated based on customFarmSize
 }
 
 // Energy source efficiency multipliers
@@ -198,15 +212,55 @@ const ENERGY_EFFICIENCY = {
 }
 
 /**
+ * Calculate size multiplier for custom farm size
+ */
+function getCustomSizeMultiplier(customFarmSize: number): number {
+  // Use small system (4.6 m²) as baseline
+  return customFarmSize / FARM_SIZE_M2.small
+}
+
+/**
+ * Calculate water consumption for custom farm size
+ */
+function getCustomWaterConsumption(customFarmSize: number): number {
+  // Scale linearly from small system baseline
+  return (customFarmSize / FARM_SIZE_M2.small) * WATER_CONSUMPTION_BASE.small
+}
+
+/**
+ * Calculate energy consumption for custom farm size
+ */
+function getCustomEnergyConsumption(customFarmSize: number): number {
+  // Scale with slight efficiency gains for larger systems
+  const baseRatio = customFarmSize / FARM_SIZE_M2.small
+  const efficiencyFactor = Math.pow(baseRatio, 0.9) // Slight efficiency gains
+  return efficiencyFactor * ENERGY_CONSUMPTION_BASE.small
+}
+
+/**
  * Simulates aquaponic system performance based on wizard parameters
  * Uses simplified grey-box equations for yield and resource predictions
- * Now includes climate factor adjustments
+ * Now includes climate factor adjustments and custom farm size support
  * 
  * @param params - Configuration from onboarding wizard
  * @returns Predicted system performance metrics with climate data
  */
 export function simulate(params: WizardParams): SimulationResult {
-  const sizeMultiplier = FARM_SIZE_MULTIPLIERS[params.farmSize as keyof typeof FARM_SIZE_MULTIPLIERS] || 1
+  let sizeMultiplier: number
+  let baseWater: number
+  let baseEnergy: number
+
+  // Handle custom farm size
+  if (params.farmSize === 'custom' && params.customFarmSize) {
+    sizeMultiplier = getCustomSizeMultiplier(params.customFarmSize)
+    baseWater = getCustomWaterConsumption(params.customFarmSize)
+    baseEnergy = getCustomEnergyConsumption(params.customFarmSize)
+  } else {
+    sizeMultiplier = FARM_SIZE_MULTIPLIERS[params.farmSize as keyof typeof FARM_SIZE_MULTIPLIERS] || 1
+    baseWater = WATER_CONSUMPTION_BASE[params.farmSize as keyof typeof WATER_CONSUMPTION_BASE] || 200
+    baseEnergy = ENERGY_CONSUMPTION_BASE[params.farmSize as keyof typeof ENERGY_CONSUMPTION_BASE] || 10
+  }
+
   const systemTypeEfficiency = SYSTEM_TYPE_EFFICIENCY[params.systemType as keyof typeof SYSTEM_TYPE_EFFICIENCY] || 1.0
   const systemWaterMultiplier = SYSTEM_WATER_USAGE[params.systemType as keyof typeof SYSTEM_WATER_USAGE] || 1.0
   
@@ -257,15 +311,13 @@ export function simulate(params: WizardParams): SimulationResult {
   vegYieldKg *= climateSolar
 
   // Calculate daily water consumption (L/day)
-  // Formula: base_consumption * size_factor * crop_water_factor * fish_water_factor * system_water_multiplier
-  const baseWater = WATER_CONSUMPTION_BASE[params.farmSize as keyof typeof WATER_CONSUMPTION_BASE] || 200
+  // Formula: base_consumption * crop_water_factor * fish_water_factor * system_water_multiplier
   const cropWaterFactor = 1 + (params.cropChoice.length * 0.1) // More crops = more water
   const fishWaterFactor = 1 + (params.fishSpecies.length * 0.15) // More fish = more water
   const dailyWaterL = baseWater * cropWaterFactor * fishWaterFactor * systemWaterMultiplier
 
   // Calculate daily energy consumption (kWh/day)
   // Formula: base_energy * energy_efficiency * system_complexity * system_energy_multiplier
-  const baseEnergy = ENERGY_CONSUMPTION_BASE[params.farmSize as keyof typeof ENERGY_CONSUMPTION_BASE] || 10
   const energyEfficiency = ENERGY_EFFICIENCY[params.energySource as keyof typeof ENERGY_EFFICIENCY] || 1.0
   const systemComplexity = 1 + ((params.fishSpecies.length + params.cropChoice.length - 2) * 0.08)
   

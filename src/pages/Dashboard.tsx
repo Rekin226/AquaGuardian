@@ -21,7 +21,8 @@ import {
   Activity,
   Target,
   Eye,
-  MapPin
+  MapPin,
+  Ruler
 } from 'lucide-react'
 
 export function Dashboard() {
@@ -144,6 +145,13 @@ export function Dashboard() {
     </motion.div>
   )
 
+  const formatFarmSize = (farmSize: string, customFarmSize?: number) => {
+    if (farmSize === 'custom' && customFarmSize) {
+      return `${customFarmSize} m²`
+    }
+    return farmSize
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -261,7 +269,11 @@ export function Dashboard() {
                 {[
                   { label: 'System Type', value: design.params.systemType?.toUpperCase() || 'Not specified' },
                   { label: 'Configuration', value: design.params.mode === 'custom' ? 'Custom' : 'Quick Setup' },
-                  { label: 'Farm Size', value: design.params.farmSize },
+                  { 
+                    label: 'Farm Size', 
+                    value: formatFarmSize(design.params.farmSize, design.params.customFarmSize),
+                    icon: design.params.farmSize === 'custom' ? Ruler : undefined
+                  },
                   { label: 'Fish Species', value: design.params.fishSpecies?.join(', ') || 'None' },
                   { label: 'Crops', value: design.params.cropChoice?.join(', ') || 'None' },
                   { label: 'Energy Source', value: design.params.energySource }
@@ -273,7 +285,10 @@ export function Dashboard() {
                     transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
                     className="text-center p-4 bg-slate-50 dark:bg-slate-700 rounded-2xl"
                   >
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">{item.label}</p>
+                    <div className="flex items-center justify-center space-x-1 mb-2">
+                      {item.icon && <item.icon className="h-4 w-4 text-slate-600 dark:text-slate-400" />}
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{item.label}</p>
+                    </div>
                     <p className="text-lg font-semibold text-slate-900 dark:text-white capitalize">
                       {item.value}
                     </p>

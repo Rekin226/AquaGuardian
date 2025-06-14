@@ -23,7 +23,8 @@ import {
   ToggleRight,
   MapPin,
   Thermometer,
-  Sun
+  Sun,
+  Ruler
 } from 'lucide-react'
 
 interface WizardData {
@@ -39,6 +40,7 @@ interface WizardData {
   sumpVol?: number
   pipeDia?: number
   farmSize: string
+  customFarmSize?: number
   fishSpecies: string[]
   cropChoice: string[]
   budget: string
@@ -70,7 +72,7 @@ export function Wizard() {
 
   const handleNext = async () => {
     // Validate current step
-    if ((currentStep === 0 && data.mode === 'custom') || (currentStep === 0 && data.customClimate)) {
+    if ((currentStep === 0 && data.mode === 'custom') || (currentStep === 0 && data.customClimate) || (currentStep === 2 && data.farmSize === 'custom')) {
       const validation = validateSystemParams(data)
       if (!validation.isValid) {
         setValidationErrors(validation.errors)
@@ -142,7 +144,12 @@ export function Wizard() {
         }
         return true
       case 2:
-        return data.farmSize !== ''
+        if (data.farmSize === '') return false
+        if (data.farmSize === 'custom') {
+          const validation = validateSystemParams(data)
+          return validation.isValid
+        }
+        return true
       case 3:
         return data.fishSpecies.length > 0
       case 4:
@@ -616,12 +623,31 @@ export function Wizard() {
             canGoNext={canGoNext()}
           >
             <div className="space-y-4">
+              {/* Validation Errors */}
+              {validationErrors.length > 0 && (
+                <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
+                        Validation Errors
+                      </h4>
+                      <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
+                        {validationErrors.map((error, index) => (
+                          <li key={index}>• {error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { value: 'small', label: 'Small (Home/Hobby)', desc: 'Up to 50 sq ft', icon: '🏠' },
-                  { value: 'medium', label: 'Medium (Commercial)', desc: '50-500 sq ft', icon: '🏢' },
-                  { value: 'large', label: 'Large (Industrial)', desc: '500+ sq ft', icon: '🏭' },
-                  { value: 'custom', label: 'Custom Size', desc: 'Tell us your specific needs', icon: '⚙️' },
+                  { value: 'small', label: 'Small (Home/Hobby)', desc: '~4.6 m² (50 sq ft)', icon: '🏠' },
+                  { value: 'medium', label: 'Medium (Commercial)', desc: '~46.5 m² (500 sq ft)', icon: '🏢' },
+                  { value: 'large', label: 'Large (Industrial)', desc: '~232 m² (2500 sq ft)', icon: '🏭' },
+                  { value: 'custom', label: 'Custom Size', desc: 'Enter your specific dimensions', icon: '📐' },
                 ].map((option, index) => (
                   <motion.button
                     key={option.value}
@@ -654,6 +680,73 @@ export function Wizard() {
                   </motion.button>
                 ))}
               </div>
+
+              {/* Custom Farm Size Input */}
+              {data.farmSize === 'custom' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6"
+                >
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center space-x-2">
+                    <Ruler className="h-5 w-5" />
+                    <span>Custom Farm Size</span>
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Farm Area (m²)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min={VALIDATION_RULES.customFarmSize.min}
+                          max={VALIDATION_RULES.customFarmSize.max}
+                          step="0.1"
+                          value={data.customFarmSize || ''}
+                          onChange={(e) => updateData('customFarmSize', parseFloat(e.target.value) || 0)}
+                          className="w-full px-4 py-3 pr-12 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white dark:bg-slate-700"
+                          placeholder={`${VALIDATION_RULES.customFarmSize.min}-${VALIDATION_RULES.customFarmSize.max}`}
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <span className="text-slate-500 dark:text-slate-400 text-sm font-medium">m²</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Range: {VALIDATION_RULES.customFarmSize.min}-{VALIDATION_RULES.customFarmSize.max} m²
+                      </p>
+                    </div>
+
+                    {/* Size Reference */}
+                    {data.customFarmSize && data.customFarmSize > 0 && (
+                      <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Ruler className="h-4 w-4 text-emerald-600" />
+                          <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Size Reference
+                          </span>
+                        </div>
+                        <div className="text-sm text-emerald-700 dark:text-emerald-300 space-y-1">
+                          <p>• Your farm: <strong>{data.customFarmSize} m²</strong></p>
+                          <p>• Equivalent to: <strong>{(data.customFarmSize * 10.764).toFixed(1)} sq ft</strong></p>
+                          {data.customFarmSize <= 10 && <p>• Size category: <strong>Small/Hobby scale</strong></p>}
+                          {data.customFarmSize > 10 && data.customFarmSize <= 100 && <p>• Size category: <strong>Medium/Commercial scale</strong></p>}
+                          {data.customFarmSize > 100 && <p>• Size category: <strong>Large/Industrial scale</strong></p>}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <strong>Custom Size:</strong> Enter your exact farm area in square meters for precise yield and resource calculations.
+                        All system parameters will be scaled accordingly.
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </WizardStep>
         )
