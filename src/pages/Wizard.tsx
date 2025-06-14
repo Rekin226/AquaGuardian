@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useSubscription } from '../lib/subscription'
@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { WizardStep } from '../components/wizard/WizardStep'
 import { ProFeatureButton } from '../components/ProGate'
 import { SYSTEM_PRESETS, validateSystemParams, VALIDATION_RULES } from '../lib/simulator'
+import { CLIMATE_PRESETS, detectClimateFromTimezone, getClimateEmoji, ClimateKey } from '../data/climate'
 import { motion } from 'framer-motion'
 import { 
   Settings,
@@ -19,10 +20,17 @@ import {
   Crown,
   AlertCircle,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  MapPin,
+  Thermometer,
+  Sun
 } from 'lucide-react'
 
 interface WizardData {
+  climateKey: ClimateKey
+  customClimate: boolean
+  customTemp?: number
+  customSolar?: number
   systemType: string
   mode: 'quick' | 'custom'
   tankVol?: number
@@ -46,6 +54,8 @@ export function Wizard() {
   const [simulationCount, setSimulationCount] = useState(0)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [data, setData] = useState<WizardData>({
+    climateKey: detectClimateFromTimezone(),
+    customClimate: false,
     systemType: '',
     mode: 'quick',
     farmSize: '',
@@ -55,12 +65,12 @@ export function Wizard() {
     energySource: '',
   })
 
-  const totalSteps = 6
+  const totalSteps = 7
   const maxFreeSimulations = 3
 
   const handleNext = async () => {
     // Validate current step
-    if (currentStep === 0 && data.mode === 'custom') {
+    if ((currentStep === 0 && data.mode === 'custom') || (currentStep === 0 && data.customClimate)) {
       const validation = validateSystemParams(data)
       if (!validation.isValid) {
         setValidationErrors(validation.errors)
@@ -118,21 +128,28 @@ export function Wizard() {
   const canGoNext = () => {
     switch (currentStep) {
       case 0:
+        // Location step - always valid since we have auto-detection
+        if (data.customClimate) {
+          const validation = validateSystemParams(data)
+          return validation.isValid
+        }
+        return true
+      case 1:
         if (data.systemType === '') return false
         if (data.mode === 'custom') {
           const validation = validateSystemParams(data)
           return validation.isValid
         }
         return true
-      case 1:
-        return data.farmSize !== ''
       case 2:
-        return data.fishSpecies.length > 0
+        return data.farmSize !== ''
       case 3:
-        return data.cropChoice.length > 0
+        return data.fishSpecies.length > 0
       case 4:
-        return data.budget !== ''
+        return data.cropChoice.length > 0
       case 5:
+        return data.budget !== ''
+      case 6:
         return data.energySource !== ''
       default:
         return false
@@ -185,6 +202,182 @@ export function Wizard() {
   const renderStep = () => {
     switch (currentStep) {
       case 0:
+        return (
+          <WizardStep
+            title="Location & Climate"
+            description="Select your climate zone for accurate yield and energy estimates"
+            currentStep={currentStep + 1}
+            totalSteps={totalSteps}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            canGoNext={canGoNext()}
+          >
+            <div className="space-y-6">
+              {/* Auto-detected Climate */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl"
+              >
+                <div className="flex items-center space-x-3">
+                  <MapPin className="h-5 w-5 text-emerald-600" />
+                  <div>
+                    <p className="font-medium text-emerald-800 dark:text-emerald-200">
+                      Auto-detected: {getClimateEmoji(data.climateKey)} {CLIMATE_PRESETS[data.climateKey].label}
+                    </p>
+                    <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                      Based on your timezone • {CLIMATE_PRESETS[data.climateKey].temp}°C • {CLIMATE_PRESETS[data.climateKey].solar}× solar
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Climate Preset Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(CLIMATE_PRESETS).map(([key, preset], index) => (
+                  <motion.button
+                    key={key}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => updateData('climateKey', key as ClimateKey)}
+                    className={`p-4 text-left rounded-2xl border-2 transition-all duration-200 ${
+                      data.climateKey === key
+                        ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 shadow-lg'
+                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl">{getClimateEmoji(key as ClimateKey)}</span>
+                        <div>
+                          <h3 className="font-semibold text-slate-900 dark:text-white">
+                            {preset.label}
+                          </h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">
+                            {preset.temp}°C • {preset.solar}× solar factor
+                          </p>
+                        </div>
+                      </div>
+                      {data.climateKey === key && (
+                        <CheckCircle className="h-5 w-5 text-emerald-500" />
+                      )}
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+
+              {/* Custom Climate Toggle */}
+              <div className="flex items-center justify-center space-x-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-2xl">
+                <span className={`text-sm font-medium ${!data.customClimate ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-400'}`}>
+                  Preset Climate
+                </span>
+                <button
+                  onClick={() => updateData('customClimate', !data.customClimate)}
+                  className="relative"
+                >
+                  {!data.customClimate ? (
+                    <ToggleLeft className="h-8 w-8 text-emerald-600" />
+                  ) : (
+                    <ToggleRight className="h-8 w-8 text-emerald-600" />
+                  )}
+                </button>
+                <span className={`text-sm font-medium ${data.customClimate ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-400'}`}>
+                  Custom Climate
+                </span>
+              </div>
+
+              {/* Custom Climate Inputs */}
+              {data.customClimate && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6"
+                >
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                    Custom Climate Settings
+                  </h3>
+
+                  {/* Validation Errors */}
+                  {validationErrors.length > 0 && (
+                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                      <div className="flex items-start space-x-2">
+                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
+                            Validation Errors
+                          </h4>
+                          <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
+                            {validationErrors.map((error, index) => (
+                              <li key={index}>• {error}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        <div className="flex items-center space-x-2">
+                          <Thermometer className="h-4 w-4" />
+                          <span>Average Water Temperature (°C)</span>
+                        </div>
+                      </label>
+                      <input
+                        type="number"
+                        min={VALIDATION_RULES.customTemp.min}
+                        max={VALIDATION_RULES.customTemp.max}
+                        step="0.1"
+                        value={data.customTemp || ''}
+                        onChange={(e) => updateData('customTemp', parseFloat(e.target.value) || 0)}
+                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white dark:bg-slate-700"
+                        placeholder={`${VALIDATION_RULES.customTemp.min}-${VALIDATION_RULES.customTemp.max}`}
+                      />
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Range: {VALIDATION_RULES.customTemp.min}-{VALIDATION_RULES.customTemp.max}°C
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        <div className="flex items-center space-x-2">
+                          <Sun className="h-4 w-4" />
+                          <span>Solar Radiation (kWh/m²/day)</span>
+                        </div>
+                      </label>
+                      <input
+                        type="number"
+                        min={VALIDATION_RULES.customSolar.min}
+                        max={VALIDATION_RULES.customSolar.max}
+                        step="0.1"
+                        value={data.customSolar || ''}
+                        onChange={(e) => updateData('customSolar', parseFloat(e.target.value) || 0)}
+                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white dark:bg-slate-700"
+                        placeholder={`${VALIDATION_RULES.customSolar.min}-${VALIDATION_RULES.customSolar.max}`}
+                      />
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Range: {VALIDATION_RULES.customSolar.min}-{VALIDATION_RULES.customSolar.max} kWh/m²/day
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <strong>Custom Climate:</strong> Enter your local average water temperature and solar radiation values for more accurate yield predictions.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </WizardStep>
+        )
+
+      case 1:
         return (
           <WizardStep
             title="System Type & Configuration"
@@ -411,7 +604,7 @@ export function Wizard() {
           </WizardStep>
         )
 
-      case 1:
+      case 2:
         return (
           <WizardStep
             title="Farm Size"
@@ -465,7 +658,7 @@ export function Wizard() {
           </WizardStep>
         )
 
-      case 2:
+      case 3:
         return (
           <WizardStep
             title="Fish Species"
@@ -533,7 +726,7 @@ export function Wizard() {
           </WizardStep>
         )
 
-      case 3:
+      case 4:
         return (
           <WizardStep
             title="Crop Choice"
@@ -601,7 +794,7 @@ export function Wizard() {
           </WizardStep>
         )
 
-      case 4:
+      case 5:
         return (
           <WizardStep
             title="Budget"
@@ -655,7 +848,7 @@ export function Wizard() {
           </WizardStep>
         )
 
-      case 5:
+      case 6:
         return (
           <WizardStep
             title="Energy Source"

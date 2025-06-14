@@ -5,10 +5,18 @@ A comprehensive aquaponic system design and simulation platform with blockchain 
 ## Features
 
 ### 🌱 Core Functionality
+- **Location Preset**: Auto-detect climate zone based on timezone for accurate yield estimates
 - **Interactive Design Wizard**: Step-by-step aquaponic system configuration
 - **Real-time Simulation**: Advanced performance modeling with yield predictions
 - **Performance Analytics**: 30-day cumulative charts and efficiency metrics
 - **Design Marketplace**: Community sharing and discovery platform
+
+### 🌍 Climate-Based Optimization
+- **Auto-Detection**: Automatically detects climate zone from user's timezone
+- **Climate Presets**: Tropical, Sub-tropical, Temperate, and Cool climate zones
+- **Custom Climate**: Manual temperature and solar radiation input for precise modeling
+- **Yield Adjustments**: Fish growth and vegetable yields automatically adjust based on climate factors
+- **Energy Estimates**: Climate-aware energy consumption calculations
 
 ### 💳 Payment Integration
 - **Stripe Checkout**: Secure payment processing with credit cards and digital wallets
@@ -88,6 +96,36 @@ ELEVEN_API_KEY=your_elevenlabs_api_key
 ```
 
 **Note**: Algorand TestNet configuration is now handled with inline constants in `src/lib/algorand.ts`. No environment variables needed for blockchain features.
+
+## Climate System
+
+### Auto-Detection
+The system automatically detects the user's climate zone based on their timezone:
+
+```typescript
+// Automatically detects climate from timezone
+const detectedClimate = detectClimateFromTimezone()
+// Returns: 'tropical' | 'subtropical' | 'temperate' | 'cool'
+```
+
+### Climate Presets
+Four climate zones with specific temperature and solar factors:
+
+- **Tropical**: 25°C, 1.15× solar factor
+- **Sub-tropical**: 22°C, 1.05× solar factor  
+- **Temperate**: 18°C, 0.90× solar factor
+- **Cool**: 14°C, 0.75× solar factor
+
+### Custom Climate
+Users can specify custom values:
+- **Water Temperature**: 10-30°C range
+- **Solar Radiation**: 0.5-8 kWh/m²/day range
+
+### Impact on Simulation
+Climate factors directly affect:
+- **Fish Growth**: `fishYield *= (temperature / 20)` - warmer water increases fish growth
+- **Plant Growth**: `vegYield *= solarFactor` - more solar radiation increases plant yields
+- **Energy Usage**: Climate-aware energy consumption calculations
 
 ## Stripe Payment Setup
 
@@ -217,8 +255,9 @@ npm run qa:full
 The test suite covers:
 
 - **Authentication Flow**: Sign up, sign in, demo access
-- **Wizard Completion**: All 5 steps with validation
-- **Simulation Accuracy**: Yield calculations > 0, realistic values
+- **Wizard Completion**: All 7 steps with validation (including climate selection)
+- **Climate System**: Auto-detection, presets, custom climate validation
+- **Simulation Accuracy**: Yield calculations > 0, realistic values, climate factor application
 - **Tokenization**: Token creation, Algorand integration
 - **Payment Processing**: Stripe checkout and subscription flows
 - **Navigation**: Sidebar, mobile, theme switching
@@ -239,6 +278,7 @@ Tests automatically flag issues as "MUST-FIX" when:
 - ❌ **E2E Test Failures**: Any Playwright test fails
 - ❌ **Coverage Below 80%**: Unit test coverage drops below threshold
 - ❌ **Simulation Accuracy**: Yield calculations return 0 or invalid values
+- ❌ **Climate Validation**: Climate factor application fails
 - ❌ **Token Creation**: Blockchain integration fails
 - ❌ **Payment Processing**: Stripe integration failures
 - ❌ **Performance**: Lighthouse scores below 90%

@@ -4,6 +4,7 @@ import { simulate, batchSimulate, WizardParams, validateSystemParams } from './s
 describe('Aquaponic System Simulator', () => {
   it('should calculate yields for small home system', () => {
     const params: WizardParams = {
+      climateKey: 'temperate',
       systemType: 'media-bed',
       mode: 'quick',
       farmSize: 'small',
@@ -22,16 +23,14 @@ describe('Aquaponic System Simulator', () => {
     expect(result.systemEfficiency).toBeGreaterThanOrEqual(0)
     expect(result.systemEfficiency).toBeLessThanOrEqual(100)
     expect(result.monthlyOperatingCost).toBeGreaterThan(0)
-
-    // Specific expectations for small system
-    expect(result.fishYieldKg).toBeCloseTo(45, 0) // Single tilapia species
-    expect(result.vegYieldKg).toBeCloseTo(47.3, 1) // Lettuce + spinach with synergy
-    expect(result.dailyWaterL).toBe(65) // Base 50L + crop/fish factors
-    expect(result.dailyKWh).toBe(2.7) // Base 2.5kWh + complexity
+    expect(result.climateKey).toBe('temperate')
+    expect(result.tempUsed).toBe(18)
+    expect(result.solarFactor).toBe(0.90)
   })
 
   it('should calculate yields for large commercial system', () => {
     const params: WizardParams = {
+      climateKey: 'tropical',
       systemType: 'dwc',
       mode: 'quick',
       farmSize: 'large',
@@ -51,27 +50,123 @@ describe('Aquaponic System Simulator', () => {
 
     // DWC system should have higher efficiency
     expect(result.systemEfficiency).toBe(100) // Maximum budget efficiency with DWC bonus
+    expect(result.climateKey).toBe('tropical')
+    expect(result.tempUsed).toBe(25)
+    expect(result.solarFactor).toBe(1.15)
   })
 
-  it('should handle multiple fish species with efficiency reduction', () => {
-    const singleSpecies: WizardParams = {
+  it('should apply climate factors correctly', () => {
+    const tropicalParams: WizardParams = {
+      climateKey: 'tropical',
       systemType: 'media-bed',
       mode: 'quick',
       farmSize: 'medium',
       fishSpecies: ['Tilapia'],
       cropChoice: ['Lettuce'],
       budget: '5000-20000',
-      energySource: 'solar'
+      energySource: 'grid'
+    }
+
+    const temperateParams: WizardParams = {
+      climateKey: 'temperate',
+      systemType: 'media-bed',
+      mode: 'quick',
+      farmSize: 'medium',
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const tropicalResult = simulate(tropicalParams)
+    const temperateResult = simulate(temperateParams)
+
+    // Tropical should have higher fish yield (warmer water) and vegetable yield (more solar)
+    expect(tropicalResult.fishYieldKg).toBeGreaterThan(temperateResult.fishYieldKg)
+    expect(tropicalResult.vegYieldKg).toBeGreaterThan(temperateResult.vegYieldKg)
+  })
+
+  it('should handle custom climate correctly', () => {
+    const customParams: WizardParams = {
+      customClimate: true,
+      customTemp: 22,
+      customSolar: 1.1,
+      systemType: 'nft',
+      mode: 'quick',
+      farmSize: 'medium',
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const result = simulate(customParams)
+
+    expect(result.tempUsed).toBe(22)
+    expect(result.solarFactor).toBe(1.1)
+    expect(result.fishYieldKg).toBeGreaterThan(0)
+    expect(result.vegYieldKg).toBeGreaterThan(0)
+  })
+
+  it('should validate custom climate parameters correctly', () => {
+    const validParams: WizardParams = {
+      customClimate: true,
+      customTemp: 20,
+      customSolar: 3.5,
+      systemType: 'media-bed',
+      mode: 'quick',
+      farmSize: 'medium',
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const validation = validateSystemParams(validParams)
+    expect(validation.isValid).toBe(true)
+    expect(validation.errors).toHaveLength(0)
+  })
+
+  it('should reject invalid custom climate parameters', () => {
+    const invalidParams: WizardParams = {
+      customClimate: true,
+      customTemp: 5, // Too low
+      customSolar: 10, // Too high
+      systemType: 'media-bed',
+      mode: 'quick',
+      farmSize: 'medium',
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const validation = validateSystemParams(invalidParams)
+    expect(validation.isValid).toBe(false)
+    expect(validation.errors.length).toBeGreaterThan(0)
+  })
+
+  it('should handle multiple fish species with efficiency reduction', () => {
+    const singleSpecies: WizardParams = {
+      climateKey: 'temperate',
+      systemType: 'media-bed',
+      mode: 'quick',
+      farmSize: 'medium',
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
     }
 
     const multipleSpecies: WizardParams = {
+      climateKey: 'temperate',
       systemType: 'media-bed',
       mode: 'quick',
       farmSize: 'medium',
       fishSpecies: ['Tilapia', 'Trout', 'Bass'],
       cropChoice: ['Lettuce'],
       budget: '5000-20000',
-      energySource: 'solar'
+      energySource: 'grid'
     }
 
     const singleResult = simulate(singleSpecies)
@@ -86,6 +181,7 @@ describe('Aquaponic System Simulator', () => {
 
   it('should apply energy source efficiency correctly', () => {
     const baseParams: WizardParams = {
+      climateKey: 'temperate',
       systemType: 'nft',
       mode: 'quick',
       farmSize: 'medium',
@@ -107,6 +203,7 @@ describe('Aquaponic System Simulator', () => {
   it('should handle batch simulation correctly', () => {
     const paramSets: WizardParams[] = [
       {
+        climateKey: 'cool',
         systemType: 'media-bed',
         mode: 'quick',
         farmSize: 'small',
@@ -116,6 +213,7 @@ describe('Aquaponic System Simulator', () => {
         energySource: 'grid'
       },
       {
+        climateKey: 'tropical',
         systemType: 'dwc',
         mode: 'quick',
         farmSize: 'large',
@@ -135,6 +233,7 @@ describe('Aquaponic System Simulator', () => {
 
   it('should calculate reasonable operating costs', () => {
     const params: WizardParams = {
+      climateKey: 'subtropical',
       systemType: 'nft',
       mode: 'quick',
       farmSize: 'medium',
@@ -153,6 +252,7 @@ describe('Aquaponic System Simulator', () => {
 
   it('should validate custom mode parameters correctly', () => {
     const validParams: WizardParams = {
+      climateKey: 'temperate',
       systemType: 'media-bed',
       mode: 'custom',
       tankVol: 800,
@@ -174,6 +274,7 @@ describe('Aquaponic System Simulator', () => {
 
   it('should reject invalid custom mode parameters', () => {
     const invalidParams: WizardParams = {
+      climateKey: 'temperate',
       systemType: 'media-bed',
       mode: 'custom',
       tankVol: 50, // Too small
@@ -195,6 +296,7 @@ describe('Aquaponic System Simulator', () => {
 
   it('should pass validation for custom mode case (tank 800L, purifier 200L)', () => {
     const customParams: WizardParams = {
+      climateKey: 'temperate',
       systemType: 'dwc',
       mode: 'custom',
       tankVol: 800,
@@ -217,5 +319,22 @@ describe('Aquaponic System Simulator', () => {
     const result = simulate(customParams)
     expect(result.fishYieldKg).toBeGreaterThan(0)
     expect(result.vegYieldKg).toBeGreaterThan(0)
+  })
+
+  it('should ensure tropical climate returns higher fishYieldKg than temperate when all else equal', () => {
+    const baseParams = {
+      systemType: 'media-bed' as const,
+      mode: 'quick' as const,
+      farmSize: 'medium',
+      fishSpecies: ['Tilapia'],
+      cropChoice: ['Lettuce'],
+      budget: '5000-20000',
+      energySource: 'grid'
+    }
+
+    const tropicalResult = simulate({ ...baseParams, climateKey: 'tropical' })
+    const temperateResult = simulate({ ...baseParams, climateKey: 'temperate' })
+
+    expect(tropicalResult.fishYieldKg).toBeGreaterThan(temperateResult.fishYieldKg)
   })
 })

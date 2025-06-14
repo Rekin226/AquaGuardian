@@ -7,6 +7,7 @@ import { TokenizationTab } from '../components/TokenizationTab'
 import { SystemPreview } from '../components/SystemPreview'
 import { AnimatedCounter } from '../components/AnimatedCounter'
 import { YieldChart } from '../components/YieldChart'
+import { getClimateEmoji, CLIMATE_PRESETS } from '../data/climate'
 import { motion } from 'framer-motion'
 import { 
   Fish, 
@@ -19,7 +20,8 @@ import {
   Coins,
   Activity,
   Target,
-  Eye
+  Eye,
+  MapPin
 } from 'lucide-react'
 
 export function Dashboard() {
@@ -172,6 +174,24 @@ export function Dashboard() {
             {/* Removed the redundant action buttons from here */}
           </div>
         </motion.div>
+
+        {/* Climate Badge */}
+        {simulation?.climateKey && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mb-6 inline-flex items-center space-x-2 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-2 rounded-2xl"
+          >
+            <MapPin className="h-4 w-4 text-emerald-600" />
+            <span className="text-emerald-700 dark:text-emerald-300 font-medium">
+              {getClimateEmoji(simulation.climateKey)} {CLIMATE_PRESETS[simulation.climateKey].label} preset
+            </span>
+            <span className="text-emerald-600 dark:text-emerald-400 text-sm">
+              • {simulation.tempUsed}°C water • {simulation.solarFactor}× solar
+            </span>
+          </motion.div>
+        )}
 
         {/* Tabs */}
         <motion.div 
