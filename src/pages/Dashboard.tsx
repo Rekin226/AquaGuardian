@@ -16,9 +16,6 @@ import {
   TrendingUp, 
   DollarSign,
   ArrowLeft,
-  Settings,
-  Download,
-  Share2,
   Coins,
   Activity,
   Target,
@@ -148,7 +145,7 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+        {/* Header - Removed redundant Share/Export/Configure buttons */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -172,20 +169,7 @@ export function Dashboard() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <button className="flex items-center space-x-2 px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-lg">
-                <Share2 className="h-4 w-4" />
-                <span>Share</span>
-              </button>
-              <button className="flex items-center space-x-2 px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-lg">
-                <Download className="h-4 w-4" />
-                <span>Export</span>
-              </button>
-              <button className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl">
-                <Settings className="h-4 w-4" />
-                <span>Configure</span>
-              </button>
-            </div>
+            {/* Removed the redundant action buttons from here */}
           </div>
         </motion.div>
 
