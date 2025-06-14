@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../lib/auth'
 import { useSubscription } from '../lib/subscription'
 import { SubscriptionManager } from '../components/SubscriptionManager'
+import { CustomBudgetInput } from '../components/CustomBudgetInput'
 import { ProBadge } from '../components/ProGate'
 import { 
   Crown, 
@@ -13,7 +14,9 @@ import {
   ExternalLink,
   Download,
   FileText,
-  Receipt
+  Receipt,
+  DollarSign,
+  Calculator
 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 
@@ -22,6 +25,7 @@ export function Billing() {
   const { isPro } = useSubscription()
   const [searchParams] = useSearchParams()
   const [showInvoices, setShowInvoices] = useState(false)
+  const [activeTab, setActiveTab] = useState<'subscription' | 'budget'>('subscription')
 
   // Check for success/cancel parameters from Stripe redirect
   const paymentSuccess = searchParams.get('success') === 'true'
@@ -55,6 +59,16 @@ export function Billing() {
     }
   ]
 
+  const handleBudgetSave = (amount: number, currency: string) => {
+    // Budget saved successfully - the CustomBudgetInput component handles the actual saving
+    console.log('Budget saved:', amount, currency)
+  }
+
+  const handleBudgetClear = () => {
+    // Budget cleared successfully
+    console.log('Budget cleared')
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -74,10 +88,10 @@ export function Billing() {
             </Link>
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                Billing & Subscription
+                Billing & Budget
               </h1>
               <p className="text-slate-600 dark:text-slate-400 mt-1">
-                Manage your Pro Designer subscription and billing
+                Manage your subscription and project budget
               </p>
             </div>
           </div>
@@ -120,10 +134,60 @@ export function Billing() {
           </motion.div>
         )}
 
+        {/* Tabs */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mb-8"
+        >
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-2 shadow-lg border border-slate-200 dark:border-slate-700 inline-flex">
+            <button
+              onClick={() => setActiveTab('subscription')}
+              className={`relative px-6 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+                activeTab === 'subscription'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Crown className="h-4 w-4" />
+                <span>Subscription</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('budget')}
+              className={`relative px-6 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+                activeTab === 'budget'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <DollarSign className="h-4 w-4" />
+                <span>Project Budget</span>
+              </div>
+            </button>
+          </div>
+        </motion.div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <SubscriptionManager />
+            {activeTab === 'subscription' ? (
+              <SubscriptionManager />
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <CustomBudgetInput
+                  onSave={handleBudgetSave}
+                  onClear={handleBudgetClear}
+                />
+              </motion.div>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -173,113 +237,105 @@ export function Billing() {
               </div>
             </motion.div>
 
-            {/* Billing History */}
+            {/* Quick Actions */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-xl">
-                    <Receipt className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                  </div>
-                  <h3 className="font-semibold text-slate-900 dark:text-white">
-                    Billing History
-                  </h3>
-                </div>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                Quick Actions
+              </h3>
+              
+              <div className="space-y-3">
                 <button
-                  onClick={() => setShowInvoices(!showInvoices)}
-                  className="text-sm text-emerald-600 hover:text-emerald-700 transition-colors"
+                  onClick={() => setActiveTab('budget')}
+                  className={`w-full flex items-center space-x-3 p-3 rounded-xl transition-colors ${
+                    activeTab === 'budget' 
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
                 >
-                  {showInvoices ? 'Hide' : 'View All'}
+                  <Calculator className="h-4 w-4" />
+                  <span className="text-sm font-medium">Set Project Budget</span>
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('subscription')}
+                  className={`w-full flex items-center space-x-3 p-3 rounded-xl transition-colors ${
+                    activeTab === 'subscription' 
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Crown className="h-4 w-4" />
+                  <span className="text-sm font-medium">Manage Subscription</span>
                 </button>
               </div>
-              
-              {isPro ? (
-                <div className="space-y-3">
-                  {(showInvoices ? invoices : invoices.slice(0, 2)).map((invoice) => (
-                    <div
-                      key={invoice.id}
-                      className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-xl"
-                    >
-                      <div>
-                        <div className="text-sm font-medium text-slate-900 dark:text-white">
-                          ${invoice.amount.toFixed(2)}
-                        </div>
-                        <div className="text-xs text-slate-600 dark:text-slate-400">
-                          {new Date(invoice.date).toLocaleDateString()}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">
-                          Paid
-                        </span>
-                        <button
-                          onClick={() => window.open(invoice.downloadUrl, '_blank')}
-                          className="p-1 text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  No billing history available. Upgrade to Pro to see your invoices here.
-                </p>
-              )}
             </motion.div>
 
-            {/* Payment Methods */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6"
-            >
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-xl">
-                  <CreditCard className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                </div>
-                <h3 className="font-semibold text-slate-900 dark:text-white">
-                  Payment Methods
-                </h3>
-              </div>
-              
-              {isPro ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-5 bg-gradient-to-r from-blue-600 to-blue-700 rounded text-white text-xs flex items-center justify-center font-bold">
-                        VISA
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-slate-900 dark:text-white">
-                          •••• •••• •••• 4242
-                        </div>
-                        <div className="text-xs text-slate-600 dark:text-slate-400">
-                          Expires 12/25
-                        </div>
-                      </div>
+            {/* Billing History */}
+            {activeTab === 'subscription' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-xl">
+                      <Receipt className="h-5 w-5 text-slate-600 dark:text-slate-400" />
                     </div>
-                    <button className="text-sm text-emerald-600 hover:text-emerald-700 transition-colors">
-                      Edit
-                    </button>
+                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                      Billing History
+                    </h3>
                   </div>
-                  
-                  <button className="w-full p-3 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl text-sm text-slate-600 dark:text-slate-400 hover:border-emerald-500 hover:text-emerald-600 transition-colors">
-                    + Add Payment Method
+                  <button
+                    onClick={() => setShowInvoices(!showInvoices)}
+                    className="text-sm text-emerald-600 hover:text-emerald-700 transition-colors"
+                  >
+                    {showInvoices ? 'Hide' : 'View All'}
                   </button>
                 </div>
-              ) : (
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  No payment methods on file. Add a payment method when you upgrade to Pro.
-                </p>
-              )}
-            </motion.div>
+                
+                {isPro ? (
+                  <div className="space-y-3">
+                    {(showInvoices ? invoices : invoices.slice(0, 2)).map((invoice) => (
+                      <div
+                        key={invoice.id}
+                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-xl"
+                      >
+                        <div>
+                          <div className="text-sm font-medium text-slate-900 dark:text-white">
+                            ${invoice.amount.toFixed(2)}
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">
+                            {new Date(invoice.date).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">
+                            Paid
+                          </span>
+                          <button
+                            onClick={() => window.open(invoice.downloadUrl, '_blank')}
+                            className="p-1 text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    No billing history available. Upgrade to Pro to see your invoices here.
+                  </p>
+                )}
+              </motion.div>
+            )}
 
             {/* Support */}
             <motion.div

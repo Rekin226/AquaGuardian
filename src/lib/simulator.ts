@@ -15,6 +15,8 @@ export interface WizardParams {
   fishSpecies: string[]
   cropChoice: string[]
   budget: string
+  customBudget?: number
+  customBudgetCurrency?: string
   energySource: string
 }
 
@@ -240,7 +242,7 @@ function getCustomEnergyConsumption(customFarmSize: number): number {
 /**
  * Simulates aquaponic system performance based on wizard parameters
  * Uses simplified grey-box equations for yield and resource predictions
- * Now includes climate factor adjustments and custom farm size support
+ * Now includes climate factor adjustments, custom farm size support, and custom budget handling
  * 
  * @param params - Configuration from onboarding wizard
  * @returns Predicted system performance metrics with climate data
@@ -326,10 +328,10 @@ export function simulate(params: WizardParams): SimulationResult {
   const dailyKWh = (baseEnergy * systemComplexity * systemEnergyMultiplier) / energyEfficiency
 
   // Calculate system efficiency (0-100%)
-  // Based on species/crop compatibility, system complexity, and system type
+  // Based on species/crop compatibility, system complexity, system type, and budget
   const speciesComplexity = params.fishSpecies.length > 2 ? 0.9 : 1.0
   const cropComplexity = params.cropChoice.length > 4 ? 0.95 : 1.0
-  const budgetEfficiency = getBudgetEfficiency(params.budget)
+  const budgetEfficiency = getBudgetEfficiency(params.budget, params.customBudget)
   const systemEfficiency = Math.round(speciesComplexity * cropComplexity * budgetEfficiency * systemTypeEfficiency * 100)
 
   // Calculate monthly operating cost (USD)
@@ -356,8 +358,17 @@ export function simulate(params: WizardParams): SimulationResult {
 /**
  * Helper function to determine budget efficiency factor
  * Higher budgets allow for better equipment and higher efficiency
+ * Now supports custom budget amounts
  */
-function getBudgetEfficiency(budget: string): number {
+function getBudgetEfficiency(budget: string, customBudget?: number): number {
+  if (budget === 'custom' && customBudget) {
+    // Use custom budget amount to determine efficiency
+    if (customBudget < 1000) return 0.75
+    if (customBudget < 5000) return 0.85
+    if (customBudget < 20000) return 0.95
+    return 1.0
+  }
+
   switch (budget) {
     case 'under-1000':
       return 0.75 // Basic equipment, lower efficiency

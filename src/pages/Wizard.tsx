@@ -5,11 +5,12 @@ import { useSubscription } from '../lib/subscription'
 import { supabase } from '../lib/supabase'
 import { WizardStep } from '../components/wizard/WizardStep'
 import { ProFeatureButton } from '../components/ProGate'
-import { SYSTEM_PRESETS, validateSystemParams, VALIDATION_RULES } from '../lib/simulator'
-import { CLIMATE_PRESETS, detectClimateFromTimezone, getClimateEmoji, ClimateKey } from '../data/climate'
+import { CustomBudgetInput } from '../components/CustomBudgetInput'
+import { detectClimateFromTimezone, CLIMATE_PRESETS, type ClimateKey } from '../data/climate'
+import { SYSTEM_PRESETS, validateSystemParams } from '../lib/simulator'
+import { loadCustomBudget, getBudgetCategory } from '../lib/budget'
 import { motion } from 'framer-motion'
 import { 
-  Settings,
   Home, 
   Fish, 
   Leaf, 
@@ -18,13 +19,11 @@ import {
   CheckCircle,
   Sparkles,
   Crown,
-  AlertCircle,
-  ToggleLeft,
-  ToggleRight,
   MapPin,
+  Settings,
+  Ruler,
   Thermometer,
-  Sun,
-  Ruler
+  Sun
 } from 'lucide-react'
 
 interface WizardData {
@@ -44,6 +43,8 @@ interface WizardData {
   fishSpecies: string[]
   cropChoice: string[]
   budget: string
+  customBudget?: number
+  customBudgetCurrency?: string
   energySource: string
 }
 
@@ -51,14 +52,13 @@ export function Wizard() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { isPro } = useSubscription()
-  const [currentStep, setCurrentStep] = useState(0)
+  const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [simulationCount, setSimulationCount] = useState(0)
-  const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [data, setData] = useState<WizardData>({
     climateKey: detectClimateFromTimezone(),
     customClimate: false,
-    systemType: '',
+    systemType: 'media-bed',
     mode: 'quick',
     farmSize: '',
     fishSpecies: [],
@@ -70,18 +70,21 @@ export function Wizard() {
   const totalSteps = 7
   const maxFreeSimulations = 3
 
-  const handleNext = async () => {
-    // Validate current step
-    if ((currentStep === 0 && data.mode === 'custom') || (currentStep === 0 && data.customClimate) || (currentStep === 2 && data.farmSize === 'custom')) {
-      const validation = validateSystemParams(data)
-      if (!validation.isValid) {
-        setValidationErrors(validation.errors)
-        return
-      }
+  useEffect(() => {
+    // Load custom budget if available
+    const savedBudget = loadCustomBudget()
+    if (savedBudget) {
+      setData(prev => ({
+        ...prev,
+        budget: 'custom',
+        customBudget: savedBudget.amount,
+        customBudgetCurrency: savedBudget.currency
+      }))
     }
-    setValidationErrors([])
+  }, [])
 
-    if (currentStep < totalSteps - 1) {
+  const handleNext = async () => {
+    if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1)
     } else {
       await completeWizard()
@@ -89,7 +92,7 @@ export function Wizard() {
   }
 
   const handlePrevious = () => {
-    if (currentStep > 0) {
+    if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
     }
   }
@@ -100,6 +103,15 @@ export function Wizard() {
     // Check simulation limit for free users
     if (!isPro && simulationCount >= maxFreeSimulations) {
       return // This will be handled by the ProFeatureButton
+    }
+
+    // Validate system parameters if in custom mode
+    if (data.mode === 'custom') {
+      const validation = validateSystemParams(data)
+      if (!validation.isValid) {
+        alert(`Please fix the following issues:\n${validation.errors.join('\n')}`)
+        return
+      }
     }
 
     setLoading(true)
@@ -129,34 +141,19 @@ export function Wizard() {
 
   const canGoNext = () => {
     switch (currentStep) {
-      case 0:
-        // Location step - always valid since we have auto-detection
-        if (data.customClimate) {
-          const validation = validateSystemParams(data)
-          return validation.isValid
-        }
-        return true
       case 1:
-        if (data.systemType === '') return false
-        if (data.mode === 'custom') {
-          const validation = validateSystemParams(data)
-          return validation.isValid
-        }
-        return true
+        return data.climateKey !== undefined
       case 2:
-        if (data.farmSize === '') return false
-        if (data.farmSize === 'custom') {
-          const validation = validateSystemParams(data)
-          return validation.isValid
-        }
-        return true
+        return data.systemType !== ''
       case 3:
-        return data.fishSpecies.length > 0
+        return data.farmSize !== '' && (data.farmSize !== 'custom' || (data.customFarmSize && data.customFarmSize >= 1 && data.customFarmSize <= 10000))
       case 4:
-        return data.cropChoice.length > 0
+        return data.fishSpecies.length > 0
       case 5:
-        return data.budget !== ''
+        return data.cropChoice.length > 0
       case 6:
+        return data.budget !== '' && (data.budget !== 'custom' || (data.customBudget && data.customBudget > 0))
+      case 7:
         return data.energySource !== ''
       default:
         return false
@@ -164,82 +161,37 @@ export function Wizard() {
   }
 
   const updateData = (field: keyof WizardData, value: any) => {
-    setData(prev => {
-      const newData = { ...prev, [field]: value }
-      
-      // Auto-populate preset values when system type changes in quick mode
-      if (field === 'systemType' && newData.mode === 'quick') {
-        const preset = SYSTEM_PRESETS[value as keyof typeof SYSTEM_PRESETS]
-        if (preset) {
-          return {
-            ...newData,
-            tankVol: preset.tankVol,
-            bioFilterVol: preset.bioFilterVol,
-            purifierVol: preset.purifierVol,
-            sumpVol: preset.sumpVol,
-            pipeDia: preset.pipeDia
-          }
-        }
-      }
-      
-      // Clear custom values when switching to quick mode
-      if (field === 'mode' && value === 'quick' && newData.systemType) {
-        const preset = SYSTEM_PRESETS[newData.systemType as keyof typeof SYSTEM_PRESETS]
-        if (preset) {
-          return {
-            ...newData,
-            tankVol: preset.tankVol,
-            bioFilterVol: preset.bioFilterVol,
-            purifierVol: preset.purifierVol,
-            sumpVol: preset.sumpVol,
-            pipeDia: preset.pipeDia
-          }
-        }
-      }
-      
-      return newData
-    })
-    
-    // Clear validation errors when user makes changes
-    if (validationErrors.length > 0) {
-      setValidationErrors([])
-    }
+    setData(prev => ({ ...prev, [field]: value }))
   }
 
   const renderStep = () => {
     switch (currentStep) {
-      case 0:
+      case 1:
         return (
           <WizardStep
             title="Location & Climate"
-            description="Select your climate zone for accurate yield and energy estimates"
-            currentStep={currentStep + 1}
+            description="Select your climate zone for accurate yield estimates"
+            currentStep={currentStep}
             totalSteps={totalSteps}
             onNext={handleNext}
             onPrevious={handlePrevious}
             canGoNext={canGoNext()}
           >
             <div className="space-y-6">
-              {/* Auto-detected Climate */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl"
-              >
-                <div className="flex items-center space-x-3">
+              {/* Auto-detected climate */}
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl">
+                <div className="flex items-center space-x-2 mb-2">
                   <MapPin className="h-5 w-5 text-emerald-600" />
-                  <div>
-                    <p className="font-medium text-emerald-800 dark:text-emerald-200">
-                      Auto-detected: {getClimateEmoji(data.climateKey)} {CLIMATE_PRESETS[data.climateKey].label}
-                    </p>
-                    <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                      Based on your timezone • {CLIMATE_PRESETS[data.climateKey].temp}°C • {CLIMATE_PRESETS[data.climateKey].solar}× solar
-                    </p>
-                  </div>
+                  <span className="font-medium text-emerald-800 dark:text-emerald-200">
+                    Auto-detected: {CLIMATE_PRESETS[data.climateKey].label}
+                  </span>
                 </div>
-              </motion.div>
+                <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                  Based on your timezone • {CLIMATE_PRESETS[data.climateKey].temp}°C • {CLIMATE_PRESETS[data.climateKey].solar}× solar factor
+                </p>
+              </div>
 
-              {/* Climate Preset Selection */}
+              {/* Climate presets */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.entries(CLIMATE_PRESETS).map(([key, preset], index) => (
                   <motion.button
@@ -249,26 +201,26 @@ export function Wizard() {
                     transition={{ duration: 0.4, delay: index * 0.1 }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => updateData('climateKey', key as ClimateKey)}
-                    className={`p-4 text-left rounded-2xl border-2 transition-all duration-200 ${
-                      data.climateKey === key
+                    onClick={() => {
+                      updateData('climateKey', key as ClimateKey)
+                      updateData('customClimate', false)
+                    }}
+                    className={`p-6 text-left rounded-2xl border-2 transition-all duration-200 ${
+                      data.climateKey === key && !data.customClimate
                         ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 shadow-lg'
                         : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">{getClimateEmoji(key as ClimateKey)}</span>
-                        <div>
-                          <h3 className="font-semibold text-slate-900 dark:text-white">
-                            {preset.label}
-                          </h3>
-                          <p className="text-sm text-slate-600 dark:text-slate-400">
-                            {preset.temp}°C • {preset.solar}× solar factor
-                          </p>
-                        </div>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
+                          {preset.label}
+                        </h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                          {preset.temp}°C • {preset.solar}× solar
+                        </p>
                       </div>
-                      {data.climateKey === key && (
+                      {data.climateKey === key && !data.customClimate && (
                         <CheckCircle className="h-5 w-5 text-emerald-500" />
                       )}
                     </div>
@@ -276,107 +228,242 @@ export function Wizard() {
                 ))}
               </div>
 
-              {/* Custom Climate Toggle */}
-              <div className="flex items-center justify-center space-x-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-2xl">
-                <span className={`text-sm font-medium ${!data.customClimate ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-400'}`}>
-                  Preset Climate
-                </span>
+              {/* Custom climate toggle */}
+              <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
                 <button
                   onClick={() => updateData('customClimate', !data.customClimate)}
-                  className="relative"
+                  className={`w-full p-4 text-left rounded-2xl border-2 transition-all duration-200 ${
+                    data.customClimate
+                      ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20'
+                      : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+                  }`}
                 >
-                  {!data.customClimate ? (
-                    <ToggleLeft className="h-8 w-8 text-emerald-600" />
-                  ) : (
-                    <ToggleRight className="h-8 w-8 text-emerald-600" />
-                  )}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
+                        Custom Climate
+                      </h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Set specific temperature and solar values
+                      </p>
+                    </div>
+                    {data.customClimate && <CheckCircle className="h-5 w-5 text-purple-500" />}
+                  </div>
                 </button>
-                <span className={`text-sm font-medium ${data.customClimate ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-400'}`}>
-                  Custom Climate
-                </span>
+
+                {/* Custom climate inputs */}
+                {data.customClimate && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
+                  >
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        <Thermometer className="inline h-4 w-4 mr-1" />
+                        Water Temperature (°C)
+                      </label>
+                      <input
+                        type="number"
+                        min="10"
+                        max="30"
+                        value={data.customTemp || ''}
+                        onChange={(e) => updateData('customTemp', parseFloat(e.target.value))}
+                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white dark:bg-slate-700"
+                        placeholder="20"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        <Sun className="inline h-4 w-4 mr-1" />
+                        Solar Factor (kWh/m²/day)
+                      </label>
+                      <input
+                        type="number"
+                        min="0.5"
+                        max="8"
+                        step="0.1"
+                        value={data.customSolar || ''}
+                        onChange={(e) => updateData('customSolar', parseFloat(e.target.value))}
+                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white dark:bg-slate-700"
+                        placeholder="1.0"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </WizardStep>
+        )
+
+      case 2:
+        return (
+          <WizardStep
+            title="System Type"
+            description="Choose the aquaponic system type that best fits your needs"
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            canGoNext={canGoNext()}
+          >
+            <div className="space-y-6">
+              {/* Quick/Custom mode toggle */}
+              <div className="flex items-center justify-center space-x-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-2xl">
+                <button
+                  onClick={() => updateData('mode', 'quick')}
+                  className={`px-6 py-3 rounded-xl font-medium transition-all ${
+                    data.mode === 'quick'
+                      ? 'bg-emerald-500 text-white shadow-lg'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Quick Setup
+                </button>
+                <button
+                  onClick={() => updateData('mode', 'custom')}
+                  className={`px-6 py-3 rounded-xl font-medium transition-all ${
+                    data.mode === 'custom'
+                      ? 'bg-emerald-500 text-white shadow-lg'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Custom Setup
+                </button>
               </div>
 
-              {/* Custom Climate Inputs */}
-              {data.customClimate && (
+              {/* System type selection */}
+              <div className="grid grid-cols-1 gap-4">
+                {Object.entries(SYSTEM_PRESETS).map(([type, preset], index) => (
+                  <motion.button
+                    key={type}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      updateData('systemType', type)
+                      if (data.mode === 'quick') {
+                        // Auto-fill preset values
+                        updateData('tankVol', preset.tankVol)
+                        updateData('bioFilterVol', preset.bioFilterVol)
+                        updateData('purifierVol', preset.purifierVol)
+                        updateData('sumpVol', preset.sumpVol)
+                        updateData('pipeDia', preset.pipeDia)
+                      }
+                    }}
+                    className={`p-6 text-left rounded-2xl border-2 transition-all duration-200 ${
+                      data.systemType === type
+                        ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 shadow-lg'
+                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+                          {type.toUpperCase()} System
+                        </h3>
+                        <div className="grid grid-cols-2 gap-2 text-sm text-slate-600 dark:text-slate-400 mb-3">
+                          <div>Tank: {preset.tankVol}L</div>
+                          <div>Bio-filter: {preset.bioFilterVol}L</div>
+                          <div>Purifier: {preset.purifierVol}L</div>
+                          <div>Pipe: {preset.pipeDia}mm</div>
+                        </div>
+                        {data.mode === 'quick' && (
+                          <span className="inline-block bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full text-xs">
+                            Preset values will be used
+                          </span>
+                        )}
+                      </div>
+                      {data.systemType === type && (
+                        <CheckCircle className="h-5 w-5 text-emerald-500 ml-4" />
+                      )}
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+
+              {/* Custom mode inputs */}
+              {data.mode === 'custom' && data.systemType && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6"
+                  className="space-y-4 p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl"
                 >
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                    Custom Climate Settings
-                  </h3>
-
-                  {/* Validation Errors */}
-                  {validationErrors.length > 0 && (
-                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                      <div className="flex items-start space-x-2">
-                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
-                            Validation Errors
-                          </h4>
-                          <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
-                            {validationErrors.map((error, index) => (
-                              <li key={index}>• {error}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Settings className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                    <h4 className="font-semibold text-slate-900 dark:text-white">
+                      Custom Configuration
+                    </h4>
+                  </div>
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        <div className="flex items-center space-x-2">
-                          <Thermometer className="h-4 w-4" />
-                          <span>Average Water Temperature (°C)</span>
-                        </div>
+                        Tank Volume (L)
                       </label>
                       <input
                         type="number"
-                        min={VALIDATION_RULES.customTemp.min}
-                        max={VALIDATION_RULES.customTemp.max}
-                        step="0.1"
-                        value={data.customTemp || ''}
-                        onChange={(e) => updateData('customTemp', parseFloat(e.target.value) || 0)}
+                        min="100"
+                        max="2000"
+                        value={data.tankVol || ''}
+                        onChange={(e) => updateData('tankVol', parseInt(e.target.value))}
                         className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white dark:bg-slate-700"
-                        placeholder={`${VALIDATION_RULES.customTemp.min}-${VALIDATION_RULES.customTemp.max}`}
                       />
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Range: {VALIDATION_RULES.customTemp.min}-{VALIDATION_RULES.customTemp.max}°C
-                      </p>
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        <div className="flex items-center space-x-2">
-                          <Sun className="h-4 w-4" />
-                          <span>Solar Radiation (kWh/m²/day)</span>
-                        </div>
+                        Bio-Filter Volume (L)
                       </label>
                       <input
                         type="number"
-                        min={VALIDATION_RULES.customSolar.min}
-                        max={VALIDATION_RULES.customSolar.max}
-                        step="0.1"
-                        value={data.customSolar || ''}
-                        onChange={(e) => updateData('customSolar', parseFloat(e.target.value) || 0)}
+                        min="20"
+                        max="500"
+                        value={data.bioFilterVol || ''}
+                        onChange={(e) => updateData('bioFilterVol', parseInt(e.target.value))}
                         className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white dark:bg-slate-700"
-                        placeholder={`${VALIDATION_RULES.customSolar.min}-${VALIDATION_RULES.customSolar.max}`}
                       />
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Range: {VALIDATION_RULES.customSolar.min}-{VALIDATION_RULES.customSolar.max} kWh/m²/day
-                      </p>
                     </div>
-                  </div>
-
-                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      <strong>Custom Climate:</strong> Enter your local average water temperature and solar radiation values for more accurate yield predictions.
-                    </p>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Purifier Volume (L)
+                      </label>
+                      <input
+                        type="number"
+                        min="10"
+                        max="300"
+                        value={data.purifierVol || ''}
+                        onChange={(e) => updateData('purifierVol', parseInt(e.target.value))}
+                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white dark:bg-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Sump Volume (L)
+                      </label>
+                      <input
+                        type="number"
+                        min="50"
+                        max="800"
+                        value={data.sumpVol || ''}
+                        onChange={(e) => updateData('sumpVol', parseInt(e.target.value))}
+                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white dark:bg-slate-700"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Pipe Diameter (mm)
+                      </label>
+                      <input
+                        type="number"
+                        min="15"
+                        max="50"
+                        value={data.pipeDia || ''}
+                        onChange={(e) => updateData('pipeDia', parseInt(e.target.value))}
+                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white dark:bg-slate-700"
+                      />
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -384,18 +471,18 @@ export function Wizard() {
           </WizardStep>
         )
 
-      case 1:
+      case 3:
         return (
           <WizardStep
-            title="System Type & Configuration"
-            description="Choose your aquaponic system type and configuration mode"
-            currentStep={currentStep + 1}
+            title="Farm Size"
+            description="What size aquaponic system are you planning?"
+            currentStep={currentStep}
             totalSteps={totalSteps}
             onNext={handleNext}
             onPrevious={handlePrevious}
             canGoNext={canGoNext()}
           >
-            <div className="space-y-8">
+            <div className="space-y-4">
               {/* Simulation Counter for Free Users */}
               {!isPro && (
                 <motion.div 
@@ -419,235 +506,12 @@ export function Wizard() {
                 </motion.div>
               )}
 
-              {/* Mode Toggle */}
-              <div className="flex items-center justify-center space-x-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-2xl">
-                <span className={`text-sm font-medium ${data.mode === 'quick' ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-400'}`}>
-                  Quick Setup
-                </span>
-                <button
-                  onClick={() => updateData('mode', data.mode === 'quick' ? 'custom' : 'quick')}
-                  className="relative"
-                >
-                  {data.mode === 'quick' ? (
-                    <ToggleLeft className="h-8 w-8 text-emerald-600" />
-                  ) : (
-                    <ToggleRight className="h-8 w-8 text-emerald-600" />
-                  )}
-                </button>
-                <span className={`text-sm font-medium ${data.mode === 'custom' ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-400'}`}>
-                  Custom Setup
-                </span>
-              </div>
-
-              {/* System Type Selection */}
-              <div className="grid grid-cols-1 gap-6">
-                {[
-                  { 
-                    value: 'media-bed', 
-                    label: 'Media Bed System', 
-                    desc: 'Uses gravel or clay pebbles as growing medium. Great for beginners.',
-                    icon: '🪨',
-                    difficulty: 'Beginner',
-                    efficiency: '85%'
-                  },
-                  { 
-                    value: 'nft', 
-                    label: 'NFT System', 
-                    desc: 'Nutrient Film Technique with shallow channels. Efficient and space-saving.',
-                    icon: '🌊',
-                    difficulty: 'Intermediate',
-                    efficiency: '95%'
-                  },
-                  { 
-                    value: 'dwc', 
-                    label: 'DWC System', 
-                    desc: 'Deep Water Culture with roots in oxygenated water. Fastest growth.',
-                    icon: '💧',
-                    difficulty: 'Advanced',
-                    efficiency: '100%'
-                  },
-                ].map((option, index) => (
-                  <motion.div
-                    key={option.value}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                    className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-200 ${
-                      data.systemType === option.value
-                        ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 shadow-lg'
-                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg'
-                    }`}
-                  >
-                    <button
-                      onClick={() => updateData('systemType', option.value)}
-                      className="w-full p-6 text-left"
-                    >
-                      <div className="flex items-start space-x-4">
-                        <div className="text-3xl">{option.icon}</div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                              {option.label}
-                            </h3>
-                            {data.systemType === option.value && (
-                              <CheckCircle className="h-6 w-6 text-emerald-500" />
-                            )}
-                          </div>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                            {option.desc}
-                          </p>
-                          <div className="flex items-center space-x-4">
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              option.difficulty === 'Beginner' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                              option.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                              'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                            }`}>
-                              {option.difficulty}
-                            </span>
-                            <span className="text-xs text-slate-500 dark:text-slate-400">
-                              Efficiency: {option.efficiency}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                    
-                    {/* Preview SVG */}
-                    <div className="px-6 pb-6">
-                      <div className="bg-white dark:bg-slate-700 rounded-xl p-4 border border-slate-200 dark:border-slate-600">
-                        <img 
-                          src={`/svg/${option.value}.svg`} 
-                          alt={`${option.label} diagram`}
-                          className="w-full h-auto max-h-32 object-contain"
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Custom Configuration Panel */}
-              {data.systemType && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6"
-                >
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center space-x-2">
-                    <Settings className="h-5 w-5" />
-                    <span>System Configuration</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      data.mode === 'quick' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
-                      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                    }`}>
-                      {data.mode === 'quick' ? 'Preset Values' : 'Custom Values'}
-                    </span>
-                  </h3>
-
-                  {/* Validation Errors */}
-                  {validationErrors.length > 0 && (
-                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                      <div className="flex items-start space-x-2">
-                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
-                            Validation Errors
-                          </h4>
-                          <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
-                            {validationErrors.map((error, index) => (
-                              <li key={index}>• {error}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { key: 'tankVol', label: 'Tank Volume (L)', min: VALIDATION_RULES.tankVol.min, max: VALIDATION_RULES.tankVol.max },
-                      { key: 'bioFilterVol', label: 'Bio-Filter Volume (L)', min: VALIDATION_RULES.bioFilterVol.min, max: VALIDATION_RULES.bioFilterVol.max },
-                      { key: 'purifierVol', label: 'Purifier Volume (L)', min: VALIDATION_RULES.purifierVol.min, max: VALIDATION_RULES.purifierVol.max },
-                      { key: 'sumpVol', label: 'Sump Volume (L)', min: VALIDATION_RULES.sumpVol.min, max: VALIDATION_RULES.sumpVol.max },
-                      { key: 'pipeDia', label: 'Pipe Diameter (mm)', min: VALIDATION_RULES.pipeDia.min, max: VALIDATION_RULES.pipeDia.max },
-                    ].map((field) => (
-                      <div key={field.key}>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                          {field.label}
-                        </label>
-                        <input
-                          type="number"
-                          min={field.min}
-                          max={field.max}
-                          value={data[field.key as keyof WizardData] || ''}
-                          onChange={(e) => updateData(field.key as keyof WizardData, parseInt(e.target.value) || 0)}
-                          disabled={data.mode === 'quick'}
-                          className={`w-full px-4 py-3 border rounded-2xl transition-colors ${
-                            data.mode === 'quick' 
-                              ? 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 cursor-not-allowed'
-                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
-                          }`}
-                          placeholder={`${field.min}-${field.max}`}
-                        />
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          Range: {field.min}-{field.max}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {data.mode === 'quick' && (
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        <strong>Quick Setup:</strong> Using optimized preset values for {data.systemType.toUpperCase()} systems. 
-                        Switch to Custom Setup to modify these values.
-                      </p>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </div>
-          </WizardStep>
-        )
-
-      case 2:
-        return (
-          <WizardStep
-            title="Farm Size"
-            description="What size aquaponic system are you planning?"
-            currentStep={currentStep + 1}
-            totalSteps={totalSteps}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
-            canGoNext={canGoNext()}
-          >
-            <div className="space-y-4">
-              {/* Validation Errors */}
-              {validationErrors.length > 0 && (
-                <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                  <div className="flex items-start space-x-2">
-                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
-                        Validation Errors
-                      </h4>
-                      <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
-                        {validationErrors.map((error, index) => (
-                          <li key={index}>• {error}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   { value: 'small', label: 'Small (Home/Hobby)', desc: '~4.6 m² (50 sq ft)', icon: '🏠' },
                   { value: 'medium', label: 'Medium (Commercial)', desc: '~46.5 m² (500 sq ft)', icon: '🏢' },
                   { value: 'large', label: 'Large (Industrial)', desc: '~232 m² (2500 sq ft)', icon: '🏭' },
-                  { value: 'custom', label: 'Custom Size', desc: 'Enter your specific dimensions', icon: '📐' },
+                  { value: 'custom', label: 'Custom Size', desc: 'Enter your specific area', icon: '⚙️' },
                 ].map((option, index) => (
                   <motion.button
                     key={option.value}
@@ -681,20 +545,21 @@ export function Wizard() {
                 ))}
               </div>
 
-              {/* Custom Farm Size Input */}
+              {/* Custom farm size input */}
               {data.farmSize === 'custom' && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6"
+                  className="mt-6 p-6 bg-slate-50 dark:bg-slate-700 rounded-2xl"
                 >
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center space-x-2">
-                    <Ruler className="h-5 w-5" />
-                    <span>Custom Farm Size</span>
-                  </h3>
-
-                  <div className="space-y-4">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Ruler className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                    <h4 className="font-semibold text-slate-900 dark:text-white">
+                      Custom Farm Size
+                    </h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                         Farm Area (m²)
@@ -702,48 +567,43 @@ export function Wizard() {
                       <div className="relative">
                         <input
                           type="number"
-                          min={VALIDATION_RULES.customFarmSize.min}
-                          max={VALIDATION_RULES.customFarmSize.max}
+                          min="1"
+                          max="10000"
                           step="0.1"
                           value={data.customFarmSize || ''}
-                          onChange={(e) => updateData('customFarmSize', parseFloat(e.target.value) || 0)}
+                          onChange={(e) => updateData('customFarmSize', parseFloat(e.target.value))}
                           className="w-full px-4 py-3 pr-12 border border-slate-200 dark:border-slate-600 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white dark:bg-slate-700"
-                          placeholder={`${VALIDATION_RULES.customFarmSize.min}-${VALIDATION_RULES.customFarmSize.max}`}
+                          placeholder="Enter area"
                         />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                          <span className="text-slate-500 dark:text-slate-400 text-sm font-medium">m²</span>
-                        </div>
+                        <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500 dark:text-slate-400">
+                          m²
+                        </span>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Range: {VALIDATION_RULES.customFarmSize.min}-{VALIDATION_RULES.customFarmSize.max} m²
-                      </p>
+                      {data.customFarmSize && (data.customFarmSize < 1 || data.customFarmSize > 10000) && (
+                        <p className="mt-2 text-sm text-red-600">
+                          Farm size must be between 1-10,000 m²
+                        </p>
+                      )}
                     </div>
-
-                    {/* Size Reference */}
-                    {data.customFarmSize && data.customFarmSize > 0 && (
+                    
+                    {data.customFarmSize && data.customFarmSize >= 1 && data.customFarmSize <= 10000 && (
                       <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Ruler className="h-4 w-4 text-emerald-600" />
-                          <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
-                            Size Reference
-                          </span>
-                        </div>
+                        <h5 className="font-medium text-emerald-800 dark:text-emerald-200 mb-2">
+                          Size Reference
+                        </h5>
                         <div className="text-sm text-emerald-700 dark:text-emerald-300 space-y-1">
-                          <p>• Your farm: <strong>{data.customFarmSize} m²</strong></p>
-                          <p>• Equivalent to: <strong>{(data.customFarmSize * 10.764).toFixed(1)} sq ft</strong></p>
-                          {data.customFarmSize <= 10 && <p>• Size category: <strong>Small/Hobby scale</strong></p>}
-                          {data.customFarmSize > 10 && data.customFarmSize <= 100 && <p>• Size category: <strong>Medium/Commercial scale</strong></p>}
-                          {data.customFarmSize > 100 && <p>• Size category: <strong>Large/Industrial scale</strong></p>}
+                          <div>Area: {data.customFarmSize} m²</div>
+                          <div>≈ {(data.customFarmSize * 10.764).toFixed(1)} sq ft</div>
+                          <div className="font-medium">
+                            Category: {
+                              data.customFarmSize <= 10 ? 'Small/Hobby' :
+                              data.customFarmSize <= 100 ? 'Medium/Commercial' :
+                              'Large/Industrial'
+                            }
+                          </div>
                         </div>
                       </div>
                     )}
-
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        <strong>Custom Size:</strong> Enter your exact farm area in square meters for precise yield and resource calculations.
-                        All system parameters will be scaled accordingly.
-                      </p>
-                    </div>
                   </div>
                 </motion.div>
               )}
@@ -751,12 +611,12 @@ export function Wizard() {
           </WizardStep>
         )
 
-      case 3:
+      case 4:
         return (
           <WizardStep
             title="Fish Species"
             description="Which fish species would you like to raise?"
-            currentStep={currentStep + 1}
+            currentStep={currentStep}
             totalSteps={totalSteps}
             onNext={handleNext}
             onPrevious={handlePrevious}
@@ -819,12 +679,12 @@ export function Wizard() {
           </WizardStep>
         )
 
-      case 4:
+      case 5:
         return (
           <WizardStep
             title="Crop Choice"
             description="What crops do you want to grow in your system?"
-            currentStep={currentStep + 1}
+            currentStep={currentStep}
             totalSteps={totalSteps}
             onNext={handleNext}
             onPrevious={handlePrevious}
@@ -887,24 +747,26 @@ export function Wizard() {
           </WizardStep>
         )
 
-      case 5:
+      case 6:
         return (
           <WizardStep
             title="Budget"
             description="What's your budget range for this aquaponic system?"
-            currentStep={currentStep + 1}
+            currentStep={currentStep}
             totalSteps={totalSteps}
             onNext={handleNext}
             onPrevious={handlePrevious}
             canGoNext={canGoNext()}
           >
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Budget presets */}
               <div className="grid grid-cols-1 gap-4">
                 {[
                   { value: 'under-1000', label: 'Under $1,000', desc: 'Basic starter system', emoji: '💰' },
                   { value: '1000-5000', label: '$1,000 - $5,000', desc: 'Mid-range home system', emoji: '💵' },
                   { value: '5000-20000', label: '$5,000 - $20,000', desc: 'Commercial starter', emoji: '💸' },
                   { value: 'over-20000', label: 'Over $20,000', desc: 'Large commercial system', emoji: '🏦' },
+                  { value: 'custom', label: 'Custom Budget', desc: 'Enter your specific amount', emoji: '⚙️' },
                 ].map((option, index) => (
                   <motion.button
                     key={option.value}
@@ -937,16 +799,39 @@ export function Wizard() {
                   </motion.button>
                 ))}
               </div>
+
+              {/* Custom budget input */}
+              {data.budget === 'custom' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mt-6"
+                >
+                  <CustomBudgetInput
+                    value={data.customBudget}
+                    currency={data.customBudgetCurrency}
+                    onSave={(amount, currency) => {
+                      updateData('customBudget', amount)
+                      updateData('customBudgetCurrency', currency)
+                    }}
+                    onClear={() => {
+                      updateData('customBudget', undefined)
+                      updateData('customBudgetCurrency', undefined)
+                      updateData('budget', '')
+                    }}
+                  />
+                </motion.div>
+              )}
             </div>
           </WizardStep>
         )
 
-      case 6:
+      case 7:
         return (
           <WizardStep
             title="Energy Source"
             description="How do you plan to power your aquaponic system?"
-            currentStep={currentStep + 1}
+            currentStep={currentStep}
             totalSteps={totalSteps}
             onNext={!isPro && simulationCount >= maxFreeSimulations ? () => {} : handleNext}
             onPrevious={handlePrevious}
