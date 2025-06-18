@@ -7,6 +7,7 @@ import { supabase, Design } from '../lib/supabase'
 import { simulate, SimulationResult } from '../lib/simulator'
 import { ProGate } from '../components/ProGate'
 import { AnimatedCounter } from '../components/AnimatedCounter'
+import { ConfirmationDialog } from '../components/ConfirmationDialog'
 import { getClimateEmoji, CLIMATE_PRESETS } from '../data/climate'
 import { 
   Plus, 
@@ -39,6 +40,19 @@ export function MyDesignsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterBy, setFilterBy] = useState<'all' | 'recent' | 'efficient' | 'custom'>('all')
   const [error, setError] = useState<string | null>(null)
+  
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    designId: string | null
+    designName: string
+    loading: boolean
+  }>({
+    isOpen: false,
+    designId: null,
+    designName: '',
+    loading: false
+  })
 
   useEffect(() => {
     if (user) {
@@ -71,24 +85,55 @@ export function MyDesignsPage() {
     }
   }
 
-  const handleDeleteDesign = async (designId: string) => {
-    if (!confirm('Are you sure you want to delete this design? This action cannot be undone.')) {
-      return
-    }
+  const handleDeleteDesign = (designId: string, designName: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      designId,
+      designName,
+      loading: false
+    })
+  }
+
+  const confirmDeleteDesign = async () => {
+    if (!confirmDialog.designId) return
+
+    setConfirmDialog(prev => ({ ...prev, loading: true }))
 
     try {
       const { error } = await supabase
         .from('designs')
         .delete()
-        .eq('id', designId)
+        .eq('id', confirmDialog.designId)
         .eq('user_id', user?.id) // Extra security check
 
       if (error) throw error
 
-      setDesigns(prev => prev.filter(design => design.id !== designId))
+      setDesigns(prev => prev.filter(design => design.id !== confirmDialog.designId))
+      
+      // Close dialog after successful deletion
+      setTimeout(() => {
+        setConfirmDialog({
+          isOpen: false,
+          designId: null,
+          designName: '',
+          loading: false
+        })
+      }, 500)
     } catch (error) {
       console.error('Error deleting design:', error)
+      setConfirmDialog(prev => ({ ...prev, loading: false }))
       alert('Failed to delete design. Please try again.')
+    }
+  }
+
+  const closeConfirmDialog = () => {
+    if (!confirmDialog.loading) {
+      setConfirmDialog({
+        isOpen: false,
+        designId: null,
+        designName: '',
+        loading: false
+      })
     }
   }
 
@@ -240,7 +285,7 @@ export function MyDesignsPage() {
             <span>View</span>
           </Link>
           <button
-            onClick={() => handleDeleteDesign(design.id)}
+            onClick={() => handleDeleteDesign(design.id, design.name)}
             className="flex items-center space-x-1 px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
           >
             <Trash2 className="h-4 w-4" />
@@ -509,6 +554,19 @@ export function MyDesignsPage() {
           </motion.div>
         )}
       </div>
+
+      {/* Custom Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={closeConfirmDialog}
+        onConfirm={confirmDeleteDesign}
+        title="Delete Design"
+        message={`Are you sure you want to delete "${confirmDialog.designName}"? This action cannot be undone and will permanently remove all associated data.`}
+        confirmText="Delete Design"
+        cancelText="Keep Design"
+        variant="danger"
+        loading={confirmDialog.loading}
+      />
     </div>
   )
 }
