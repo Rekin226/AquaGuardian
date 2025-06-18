@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { WizardStep } from '../components/wizard/WizardStep'
 import { ProFeatureButton } from '../components/ProGate'
 import { CustomBudgetInput } from '../components/CustomBudgetInput'
+import { AIAssistant } from '../components/AIAssistant'
 import { detectClimateFromTimezone, CLIMATE_PRESETS, type ClimateKey } from '../data/climate'
 import { SYSTEM_PRESETS, validateSystemParams } from '../lib/simulator'
 import { loadCustomBudget, getBudgetCategory } from '../lib/budget'
@@ -23,7 +24,8 @@ import {
   Settings,
   Ruler,
   Thermometer,
-  Sun
+  Sun,
+  Brain
 } from 'lucide-react'
 
 interface WizardData {
@@ -55,6 +57,7 @@ export function Wizard() {
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [simulationCount, setSimulationCount] = useState(0)
+  const [showAIAssistant, setShowAIAssistant] = useState(true)
   const [data, setData] = useState<WizardData>({
     climateKey: detectClimateFromTimezone(),
     customClimate: false,
@@ -95,6 +98,10 @@ export function Wizard() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
     }
+  }
+
+  const handleAIRecommendation = (recommendation: Partial<WizardData>) => {
+    setData(prev => ({ ...prev, ...recommendation }))
   }
 
   const completeWizard = async () => {
@@ -178,6 +185,15 @@ export function Wizard() {
             canGoNext={canGoNext()}
           >
             <div className="space-y-6">
+              {/* AI Assistant */}
+              {showAIAssistant && (
+                <AIAssistant
+                  currentStep={currentStep}
+                  currentData={data}
+                  onApplyRecommendation={handleAIRecommendation}
+                />
+              )}
+
               {/* Auto-detected climate */}
               <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl">
                 <div className="flex items-center space-x-2 mb-2">
@@ -308,6 +324,15 @@ export function Wizard() {
             canGoNext={canGoNext()}
           >
             <div className="space-y-6">
+              {/* AI Assistant */}
+              {showAIAssistant && (
+                <AIAssistant
+                  currentStep={currentStep}
+                  currentData={data}
+                  onApplyRecommendation={handleAIRecommendation}
+                />
+              )}
+
               {/* Quick/Custom mode toggle */}
               <div className="flex items-center justify-center space-x-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-2xl">
                 <button
@@ -483,6 +508,15 @@ export function Wizard() {
             canGoNext={canGoNext()}
           >
             <div className="space-y-4">
+              {/* AI Assistant */}
+              {showAIAssistant && (
+                <AIAssistant
+                  currentStep={currentStep}
+                  currentData={data}
+                  onApplyRecommendation={handleAIRecommendation}
+                />
+              )}
+
               {/* Simulation Counter for Free Users */}
               {!isPro && (
                 <motion.div 
@@ -623,6 +657,15 @@ export function Wizard() {
             canGoNext={canGoNext()}
           >
             <div className="space-y-4">
+              {/* AI Assistant */}
+              {showAIAssistant && (
+                <AIAssistant
+                  currentStep={currentStep}
+                  currentData={data}
+                  onApplyRecommendation={handleAIRecommendation}
+                />
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
                   { name: 'Tilapia', emoji: '🐟', difficulty: 'Beginner' },
@@ -691,6 +734,15 @@ export function Wizard() {
             canGoNext={canGoNext()}
           >
             <div className="space-y-4">
+              {/* AI Assistant */}
+              {showAIAssistant && (
+                <AIAssistant
+                  currentStep={currentStep}
+                  currentData={data}
+                  onApplyRecommendation={handleAIRecommendation}
+                />
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
                   { name: 'Lettuce', emoji: '🥬', difficulty: 'Beginner' },
@@ -759,6 +811,15 @@ export function Wizard() {
             canGoNext={canGoNext()}
           >
             <div className="space-y-6">
+              {/* AI Assistant */}
+              {showAIAssistant && (
+                <AIAssistant
+                  currentStep={currentStep}
+                  currentData={data}
+                  onApplyRecommendation={handleAIRecommendation}
+                />
+              )}
+
               {/* Budget presets */}
               <div className="grid grid-cols-1 gap-4">
                 {[
@@ -838,6 +899,15 @@ export function Wizard() {
             canGoNext={canGoNext()}
           >
             <div className="space-y-4">
+              {/* AI Assistant */}
+              {showAIAssistant && (
+                <AIAssistant
+                  currentStep={currentStep}
+                  currentData={data}
+                  onApplyRecommendation={handleAIRecommendation}
+                />
+              )}
+
               <div className="grid grid-cols-1 gap-4">
                 {[
                   { value: 'grid', label: 'Grid Electricity', desc: 'Standard electrical power', emoji: '⚡' },
@@ -936,6 +1006,21 @@ export function Wizard() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
+      {/* AI Assistant Toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <button
+          onClick={() => setShowAIAssistant(!showAIAssistant)}
+          className={`p-3 rounded-2xl shadow-lg transition-all duration-200 ${
+            showAIAssistant 
+              ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white' 
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-purple-600'
+          }`}
+          title={showAIAssistant ? 'Hide AI Assistant' : 'Show AI Assistant'}
+        >
+          <Brain className="h-5 w-5" />
+        </button>
+      </div>
+
       {renderStep()}
     </div>
   )
